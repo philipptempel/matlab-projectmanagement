@@ -8,4 +8,4 @@ This is a simple project management "plugin" for MATLAB that will enhance your p
 
 
 ## Version
-0.0.1-dev (currently in development)
+0.1 - initial release
