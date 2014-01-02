@@ -53,7 +53,7 @@ if ( ~isempty(projects) )
             projects(selection, 2) = {selPath};
 
             % Finally save all the new data
-            save(fullfile(rootPathScript, 'prjmgmt'), 'projects', 'rootPathScript');
+            save(fullfile(rootPathScript, 'prjmgmt', 'prjmgmt.mat'), 'projects', 'rootPathScript');
         end
     end
 % Ain't got no projects :(

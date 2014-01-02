@@ -37,7 +37,7 @@ if ( ~isempty(projects) )
             if ( numel(selection) < numel(listString) )
                 projects(selection, :) = [];
 
-                save(fullfile(rootPathScript, 'prjmgmt'), 'projects', 'rootPathScript');
+                save(fullfile(rootPathScript, 'prjmgmt', 'prjmgmt.mat'), 'projects', 'rootPathScript');
                 
                 break;
             % Somebody tries to delete all projects, we won't allow that
