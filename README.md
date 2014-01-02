@@ -7,15 +7,21 @@ This is a simple project management "plugin" for MATLAB that will enhance your p
 * Easily add, update, or delete projects
 
 
-## Version
-0.2-dev - Current dev
-0.1.1 - Bug fixed
-0.1 - Initial Release
+## Current Version
+0.2
+
 
 ## Changelog
+
+### 0.2
+* Working release advised to update to
+* Fixed bugs:
+  * Bug with getting the path to the storage location of the executing file 'prjmgmt.m'
+  * Some checks for invalid data weren't done correctly and should now be fixed
+
+
 ### 0.1.1
 * Fix bug in menuAdd.m, menuUpdate.m, and menuDelete.m which made the file prjmgmt.m not being saved in the correct folder
-
 
 
 ### 0.1
