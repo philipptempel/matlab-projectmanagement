@@ -17,7 +17,7 @@ global rootPathScript;
 selPath = uigetdir();
 
 % Got a path?
-if ( ~isempty(selPath) )
+if ( selPath ~= 0 )
     % Substract the name of the last folder from the path provided
     [upperPath, deepestFolder] = fileparts(selPath);
 
@@ -40,7 +40,7 @@ class(sProjectName)
     projects(nNewIndex, 2) = {selPath};
 
     % Finally save all the new data
-    save(fullfile(rootPathScript, 'prjmgmt', 'prjmgmt.mat'), 'projects', 'rootPathScript');
+    save(fullfile(rootPathScript, 'prjmgmt.mat'), 'projects', 'rootPathScript');
 end
 
 clear nNewPos projectName upperPath deepestFolder selPath;

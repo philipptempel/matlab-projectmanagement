@@ -19,13 +19,17 @@ projects = cell(0, 2);
 % Get the root path script variable by guessing where this file is stored
 % and executed at, then grabbing its filepath and replacing the filename
 % with empty spaces
-cThisFilename = mfilename();
-[cUpperPath, cDump] = fileparts(mfilename('fullpath'));
-rootPathScript = strrep(cUpperPath, cThisFilename, '');
+rootPathScript = fileparts(mfilename('fullpath'));
 
 % Now, check if we have the data we need to run the project managemet script
 if ( exist(fullfile(rootPathScript, 'prjmgmt.mat'), 'file') )
     load(fullfile(rootPathScript, 'prjmgmt.mat'));
+end
+
+if ( ~exist('rootPathScript', 'var') || isempty(rootPathScript) )
+    rootPathScript = fileparts(mfilename('fullpath'));
+    
+    save(fullfile(rootPathScript, 'prjmgmt.mat'), 'projects', 'rootPathScript');
 end
 
 % And off we go
@@ -56,7 +60,7 @@ while true
         case 5
             break;
         otherwise
-            menuLoad()
+            menuLoad();
             
             break;
     end
@@ -64,6 +68,8 @@ end
 
 clear all
 
+
+return
 
 
 % ===== EOF ====== [prjmgmt.m] ======  

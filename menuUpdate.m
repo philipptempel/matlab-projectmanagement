@@ -33,7 +33,7 @@ if ( ~isempty(projects) )
         selPath = uigetdir(projectLocate(2));
         
         % Got a path
-        if ( ~isempty(selPath) )
+        if ( selPath ~= 0 )
             % Substract the name of the last folder from the path provided
             [upperPath, deepestFolder] = fileparts(selPath);
             
@@ -53,7 +53,7 @@ if ( ~isempty(projects) )
             projects(selection, 2) = {selPath};
 
             % Finally save all the new data
-            save(fullfile(rootPathScript, 'prjmgmt', 'prjmgmt.mat'), 'projects', 'rootPathScript');
+            save(fullfile(rootPathScript, 'prjmgmt.mat'), 'projects', 'rootPathScript');
         end
     end
 % Ain't got no projects :(
