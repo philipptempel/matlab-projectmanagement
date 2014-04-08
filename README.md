@@ -8,10 +8,14 @@ This is a simple project management "plugin" for MATLAB that will enhance your p
 
 
 ## Current Version
-0.2
+0.2.1
 
 
 ## Changelog
+
+### 0.2.1
+* Include [nat_sort](http://www.mathworks.com/matlabcentral/fileexchange/10959-sortnat-natural-order-sort) by Douglas Schwarz, applied to project names
+* Some coding standards adaptions
 
 ### 0.2
 * Working release advised to update to
