@@ -22,11 +22,11 @@ projects = cell(0, 2);
 rootPathScript = fileparts(mfilename('fullpath'));
 
 % Now, check if we have the data we need to run the project managemet script
-if ( exist(fullfile(rootPathScript, 'prjmgmt.mat'), 'file') )
+if exist(fullfile(rootPathScript, 'prjmgmt.mat'), 'file')
     load(fullfile(rootPathScript, 'prjmgmt.mat'));
 end
 
-if ( ~exist('rootPathScript', 'var') || isempty(rootPathScript) )
+if ~exist('rootPathScript', 'var') || isempty(rootPathScript)
     rootPathScript = fileparts(mfilename('fullpath'));
     
     save(fullfile(rootPathScript, 'prjmgmt.mat'), 'projects', 'rootPathScript');
@@ -44,7 +44,7 @@ while true
             loaded = menuLoad();
             
             % If a project was loaded, "project management" will end
-            if ( loaded )
+            if loaded
                 break;
             end
         % Add Project
@@ -66,7 +66,7 @@ while true
     end
 end
 
-clear all
+clear all;
 
 
 return

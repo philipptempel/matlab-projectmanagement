@@ -19,7 +19,7 @@ try
     path = cell2mat(projects(nPrjNo, 2));
 
     % Check the path exists as a directory
-    if ( ~exist(path, 'dir') )
+    if ~exist(path, 'dir')
         % Path is no directory, so we will forge a new exception
         exception = MException('PHILIPPTEMPEL:PrjMgmt:PathNotAvailable', 'Path to selected project was not found.');
         

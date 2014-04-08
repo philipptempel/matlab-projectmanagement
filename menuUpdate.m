@@ -13,7 +13,7 @@ global projects;
 global rootPathScript;
 
 % Got projects?
-if ( ~isempty(projects) )
+if ~isempty(projects)
     
     % Get the names of projects to create a nice list dialog
     listString = projects(:, 1);
@@ -28,22 +28,22 @@ if ( ~isempty(projects) )
                             'CancelString', 'Cancel');
     
     % Got a selection from the listdlg
-    if ( ok == 1 )
+    if ok == 1
         % Get a new path
-        selPath = uigetdir(projectLocate(2));
+        selPath = uigetdir(userpath, 'Please select the target folder');
         
         % Got a path
-        if ( selPath ~= 0 )
+        if selPath ~= 0
             % Substract the name of the last folder from the path provided
-            [upperPath, deepestFolder] = fileparts(selPath);
+            [~, deepestFolder] = fileparts(selPath);
             
             % Ask the user for a project name with the default being set to
             % the name of the folder selected above
-            sProjectName = inputdlg('Name of Project (empty or cancel to take name of folder)', 'Rename Project', 1, projectName(2));
+            sProjectName = inputdlg('Name of Project (empty or cancel to take name of folder)', 'Rename Project', 1, projectName(selection));
             
             % Name was canceled or not provided? Then guess it from the
             % folder name
-            if ( isempty(cell2mat(sProjectName)) )
+            if isempty(cell2mat(sProjectName))
                 sProjectName = {deepestFolder};
             end
 
@@ -51,6 +51,11 @@ if ( ~isempty(projects) )
             % variable
             projects(selection, 1) = sProjectName;
             projects(selection, 2) = {selPath};
+            
+            % Natural sort order;
+            [~, index] = sort_nat(projects(:, 1));
+            projects(:, 1) = projects(index, 1);
+            projects(:, 2) = projects(index, 2);
 
             % Finally save all the new data
             save(fullfile(rootPathScript, 'prjmgmt.mat'), 'projects', 'rootPathScript');

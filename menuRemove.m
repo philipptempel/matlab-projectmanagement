@@ -14,14 +14,14 @@ global rootPathScript;
 
 
 % Got projects?
-if ( ~isempty(projects) )
+if ~isempty(projects)
     
     % Get the names of projects to create a nice list dialog
     listString = projects(:, 1);
     
     selection = [];
     
-    while ( isempty(selection) || ( numel(selection) == numel(listString) ) )
+    while isempty(selection) || ( numel(selection) == numel(listString) )
         % Pop open a list dialog with the project names as possible selectives
         % and some other nice UI stuff ;)
         [selection, ok] = listdlg('ListString', listString, ...
@@ -32,9 +32,9 @@ if ( ~isempty(projects) )
                                 'CancelString', 'Cancel');
 
         % Got a selection from the listdlg
-        if ( ok == 1 )
+        if ok == 1
             % Delete less projects than we have defined? That's okay
-            if ( numel(selection) < numel(listString) )
+            if numel(selection) < numel(listString)
                 projects(selection, :) = [];
 
                 save(fullfile(rootPathScript, 'prjmgmt.mat'), 'projects', 'rootPathScript');

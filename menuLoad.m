@@ -15,7 +15,7 @@ global rootPathScript;
 loaded = 0;
 
 % Got projects?
-if ( ~isempty(projects) )
+if ~isempty(projects)
     
     % Get the names of projects to create a nice list dialog
     listString = projects(:, 1);
@@ -30,7 +30,7 @@ if ( ~isempty(projects) )
                             'CancelString', 'Cancel');
     
     % Got a selection from the listdlg
-    if ( ok == 1 )
+    if ok == 1
         % Try to load and startup the project
         try
             % Try to load the project (get its path and check whether that
