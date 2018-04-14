@@ -32,6 +32,9 @@ classdef project < handle & matlab.mixin.Heterogeneous
         % Number of dependent projects
         NDependents
         
+        % Flag if project exists i.e., path exists
+        Exists
+        
         % Path to `startup.m` file
         StartupPath
         
@@ -373,6 +376,14 @@ classdef project < handle & matlab.mixin.Heterogeneous
     %% OVERRIDERS
     methods
         
+        function flag = exist(this)
+            %% EXIST overrides EXIST(PROJMAN.PROJECT)
+            
+            
+            flag = this.Exists;
+            
+        end
+        
         function flag = eq(this, that)
             %% EQ compares if two PROJECT objects are the same
             
@@ -484,6 +495,14 @@ classdef project < handle & matlab.mixin.Heterogeneous
     
     %% GETTERS
     methods
+        
+        function flag = get.Exists(this)
+            %% GET.EXIST flags if the path exists
+            
+            
+            flag = 7 == exist(this.Path, 'dir');
+            
+        end
         
         function n = get.NDependencies(this)
             %% GET.NDEPENDENCIES returns the number of direct dependencies of this project
