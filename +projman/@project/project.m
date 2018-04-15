@@ -221,6 +221,7 @@ classdef (InferiorClasses = {?matlab.graphics.axis.Axes}) project < handle & mat
                 % Finis the project through its finish script
                 this.finish();
                 
+                % Had an old working directory?
                 if ~isempty(this.OriginalWD)
                     % Change to the original i.e., pre-activation working
                     % directory
@@ -301,24 +302,20 @@ classdef (InferiorClasses = {?matlab.graphics.axis.Axes}) project < handle & mat
             %% STARTUP starts this project i.e., runs its `startup.m` function/script
             
             
-            % Has `startup.m` script/function?
-            if this.HasStartup
-                % Run it
-                try
-                    run(this.StartupPath)
-                catch me
-                    throwAsCaller(me);
-                end
-            end
-
-            % Has `pathdef.m` function?
-            if this.HasPathdef
-                % Add to path
-                try
+            try
+                % Has `pathdef.m` function?
+                if this.HasPathdef
+                    % Add to path
                     this.add_paths(this.pathdef());
-                catch me
-                    throwAsCaller(me);
                 end
+            
+                % Has `startup.m` script/function?
+                if this.HasStartup
+                    % Run it
+                    run(this.StartupPath)
+                end
+            catch me
+                throwAsCaller(me);
             end
             
         end
@@ -328,12 +325,18 @@ classdef (InferiorClasses = {?matlab.graphics.axis.Axes}) project < handle & mat
             %% FINISH finishes this project i.e., runs its `finish.m` function/script
             
             
-            if this.HasFinish
-                try
+            try
+                % Run finish script
+                if this.HasFinish
                     run(this.FinishPath)
-                catch me
-                    throwAsCaller(me);
                 end
+                
+                % Then remove paths
+                if this.HasPathdef                
+                    this.rem_paths(this.pathdef());
+                end
+            catch me
+                throwAsCaller(me);
             end
             
         end
@@ -948,4 +951,3 @@ classdef (InferiorClasses = {?matlab.graphics.axis.Axes}) project < handle & mat
     
     
 end
-
