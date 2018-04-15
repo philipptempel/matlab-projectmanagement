@@ -53,6 +53,12 @@ classdef project < handle & matlab.mixin.Heterogeneous
         % Flag if project has `config.mat` file or not
         HasConfig
         
+        % Path to the `pathdef.m` file
+        PathdefPath
+        
+        % Flag if project has `pathdef.m` function or not
+        HasPathdef
+        
     end
     
     
@@ -135,6 +141,8 @@ classdef project < handle & matlab.mixin.Heterogeneous
             
             % Now we need to properly resolve the dependencies
             
+            
+            % And return the result
             deps = projs;
             
         end
@@ -157,11 +165,25 @@ classdef project < handle & matlab.mixin.Heterogeneous
             %% ACTIVATE this project and all its dependencies i.e., run all `startup.m` scripts/functions of dependencies and project itself
             
             
-            % Get the original i.e., pre-activate working directory
-            this.OriginalWD = pwd;
+            % Get the original i.e., pre-activate working directory if it's
+            % different to the project's directory
+            if ~strcmp(pwd, this.Path)
+                this.OriginalWD = pwd;
+            end
             
+            % First, get all dependencies in the correct order
+            deps = this.resolve_dependencies();
+            
+            % Startup deps, load pathdef, then go to project
             try
-            
+                % Startup each dependency
+                for iDep = 1:numel(deps)
+                    deps(iDep).startup();
+                end
+                
+                % Startup this project
+                this.startup()
+                
                 % Lastly, go to this project
                 this.go();
             catch me
@@ -176,6 +198,9 @@ classdef project < handle & matlab.mixin.Heterogeneous
             
             
             try
+                % Finis the project through its finish script
+                this.finish();
+                
                 if ~isempty(this.OriginalWD)
                     % Change to the original i.e., pre-activation working
                     % directory
@@ -256,9 +281,21 @@ classdef project < handle & matlab.mixin.Heterogeneous
             %% STARTUP starts this project i.e., runs its `startup.m` function/script
             
             
+            % Has `startup.m` script/function?
             if this.HasStartup
+                % Run it
                 try
                     run(this.StartupPath)
+                catch me
+                    throwAsCaller(me);
+                end
+            end
+            
+            % Has `pathdef.m` function?
+            if this.HasPathdef
+                % Add to path
+                try
+                    this.add_paths(this.pathdef());
                 catch me
                     throwAsCaller(me);
                 end
@@ -278,6 +315,104 @@ classdef project < handle & matlab.mixin.Heterogeneous
                     throwAsCaller(me);
                 end
             end
+            
+        end
+        
+        
+        function p = pathdef(this)
+            %% PATHDEF gets this projects `pathdef()` result
+            
+            
+            try
+                p = run(this.PathdefPath);
+            catch me
+                throwAsCaller(me);
+            end
+            
+        end
+        
+        
+        function add_paths(this, varargin)
+            %% ADD_PATHS adds the given paths to the MATLAB path
+            %
+            %   ADD_PATHS({P1, P2, P3}) adds the given paths to MATLAB path
+            %
+            %   ADD_PATHS(P1, P2, ...) adds the given paths to MATLAB path
+            
+            
+            % Loop over every given path arg
+            for iArg = 1:numel(varargin)
+                % Get the path
+                p = varargin{iArg};
+            
+                % Split path chars like 'p1:p2:p3' into {p1, p2, p3}
+                if ~iscell(p)
+                    p = regexp(p, pathsep, 'split');
+                end
+
+                % Cell array of added paths
+                ceAdded = cell(1, 0);
+
+                % Loop over every given path
+                try
+                    for iP = 1:numel(p)
+                        % Add to path
+                        addpath(p)
+                        % Store as added to path
+                        ceAdded{end+1} = p;
+                    end
+                catch me
+                    % Trigger warning
+                    warning(me.identifier, me.message);
+                    % And remove all already added paths
+                    this.rem_paths(ceAdded{:});
+                end
+            end
+        end
+        
+        
+        function rem_paths(this, varargin)
+            %% REM_PATHS removes the given paths from the MATLAB path
+            %
+            %   REM_PATHS({P1, P2, P3}) removes the given paths from MATLAB path
+            %
+            %   REM_PATHS(P1, P2, ...) removes the given paths from MATLAB path
+            
+            
+            % Set the 'MATLAB:rmpath:DirNotFound' warning to off
+            this.warningstate('off');
+            
+            % Loop over every given path arg
+            for iArg = 1:numel(varargin)
+                % Get the path
+                p = varargin{iArg};
+            
+                % Split path chars like 'p1:p2:p3' into {p1, p2, p3}
+                if ~iscell(p)
+                    p = regexp(p, pathsep, 'split');
+                end
+
+                % Cell array of added paths
+                ceRemoved = cell(1, 0);
+
+                % Loop over every given path
+                try
+                    for iP = 1:numel(p)
+                        % Remove from path
+                        rmpath(p);
+                        % Store as added to path
+                        ceRemoved{end+1} = p;
+                    end
+                catch me
+                    % Trigger warning
+                    warning(me.identifier, me.message);
+                    % And remove all already added paths
+                    this.add_paths(ceRemoved{:});
+                end
+            end
+            
+            % And reset the 'MATLAB:rmpath:DirNotFound' warning's state
+            this.warningstate('on');
             
         end
         
@@ -531,29 +666,20 @@ classdef project < handle & matlab.mixin.Heterogeneous
         end
         
         
-        function p = get.FinishPath(this)
-            %% GET.FINISH gets the path to the `finish.m` file
-            
-            
-            p = fullfile(this.Path, 'finish.m');
-            
-        end
-        
-        
-        function p = get.ConfigPath(this)
-            %% GET.CONFIGPATH gets the path to the `config.mat` file
-            
-            
-            p = fullfile(this.Path, 'config.mat');
-            
-        end
-        
-        
         function flag = get.HasStartup(this)
             %% GET.HASSTARTUP checks if the project has a startup file/function or not
             
             
             flag = 2 == exist(this.StartupPath, 'file');
+            
+        end
+        
+        
+        function p = get.FinishPath(this)
+            %% GET.FINISH gets the path to the `finish.m` file
+            
+            
+            p = fullfile(this.Path, 'finish.m');
             
         end
         
@@ -567,12 +693,72 @@ classdef project < handle & matlab.mixin.Heterogeneous
         end
         
         
+        function p = get.ConfigPath(this)
+            %% GET.CONFIGPATH gets the path to the `config.mat` file
+            
+            
+            p = fullfile(this.Path, 'config.mat');
+            
+        end
+        
+        
         function flag = get.HasConfig(this)
             %% GET.HASCONFIG checks if the project has a config file or not
             
             
             flag = 2 == exist(this.ConfigPath, 'file');
             
+        end
+        
+        
+        function p = get.PathdefPath(this)
+            %% GET.PATHDEFPATH gets the path to the `pathdef.m` function
+            
+            
+            p = fullfile(this.Path, 'pathdef.m');
+            
+        end
+        
+        
+        function flag = get.HasPathdef(this)
+            %% GET.HASPATHDEF checks if the project has a `pathdef.m` function or not
+            
+            
+            flag = 2 == exist(this.ConfigPath, 'file');
+            
+        end
+        
+    end
+    
+    
+    
+    methods ( Access = protected )
+        
+        function warningstate(this, state)
+            %% WARNINGSTATE
+            
+            
+            persistent prevstate
+            
+            % Get the initial previous warning state
+            if isempty(prevstate)
+                stState = warning('query', 'MATLAB:rmpath:DirNotFound');
+                prevstate = stState.state;
+            end
+            
+            switch state
+                case 'off'
+                    % Get the warning's previous state
+                    stState = warning('query', 'MATLAB:rmpath:DirNotFound');
+                    prevstate = stState.state;
+                    
+                    % Set the warning state to 'off'
+                    warning('off', 'MATLAB:rmpath:DirNotFound');
+                    
+                case 'on'
+                    % Set the new state
+                    warning(prevstate, 'MATLAB:rmpath:DirNotFound');
+            end
         end
         
     end
