@@ -1,4 +1,4 @@
-classdef project < handle & matlab.mixin.Heterogeneous
+classdef (InferiorClasses = {?matlab.graphics.axis.Axes}) project < handle & matlab.mixin.Heterogeneous
     % PROJECT is a single projman project object
     
     
@@ -127,23 +127,43 @@ classdef project < handle & matlab.mixin.Heterogeneous
         end
         
         
+        function deps = merge_dependencies(this)
+            %% MERGE_DEPENDENCIES merges dependencies of this project with its dependencies
+            
+            
+            % Get all direct dependencies
+            deps = this.Dependencies;
+
+            % Loop over each dependent project and get its dependencies
+            for iDep = 1:this.NDependencies
+                deps = union(deps, this.Dependencies(iDep).merge_dependencies());
+            end
+            
+        end
+        
+        
         function deps = resolve_dependencies(this)
             %% RESOLVE_DEPENDENCIES resolves the dependecies of this project
             
             
-            % Get all dependent projects
-            projs = this.Dependencies;
-            
-            % Loop over each dependent project and get its dependencies
-            for iDep = 1:this.NDependencies
-                projs = horzcat(projs, this.Dependencies(iDep).resolve_dependencies());
-            end
-            
-            % Now we need to properly resolve the dependencies
-            
-            
-            % And return the result
-            deps = projs;
+            % Get all project dependencies
+            projs = horzcat(this, this.merge_dependencies());
+            projs = fliplr(projs);
+
+            % Build the adjacency matrix
+            aAdjacency = this.adjacency(projs);
+
+            % Traverse the graph from the current project to get to the end of
+            % the dependencies
+            [~, ~, ord] = graphtraverse(sparse(aAdjacency), numel(projs));
+
+            % And return the result as the ordered list of projects going from
+            % most dependent to least dependent
+            deps = projs(ord);
+
+            % Lastly we should remove this object from the list of dependencies
+            % again as we are no dependecy of ourselves
+            deps(deps == this) = [];
             
         end
         
@@ -215,13 +235,13 @@ classdef project < handle & matlab.mixin.Heterogeneous
         end
         
         
-        function delete(this)
-            %% DELETE the object resolves in the project to be deactivated
-            
-            
-            this.deactivate();
-            
-        end
+%         function delete(this)
+%             %% DELETE the object resolves in the project to be deactivated
+%             
+%             
+%             this.deactivate();
+%             
+%         end
         
         
         function that = saveobj(this)
@@ -245,10 +265,10 @@ classdef project < handle & matlab.mixin.Heterogeneous
             if ~isempty(fieldnames(this.Config))
                 % Get a scalar config struct to be saveable
                 conf = this.Config;
-                
+
                 % Save the config structure
                 save(this.ConfigPath, '-struct', 'conf');
-                
+
                 % And remove that temporary structure again
                 clear('conf');
             end
@@ -268,7 +288,7 @@ classdef project < handle & matlab.mixin.Heterogeneous
                     throwAsCaller(me);
                 end
             end
-            
+
             % Assign output quantities
             if nargout > 0
                 varargout{1} = this.Config;
@@ -290,7 +310,7 @@ classdef project < handle & matlab.mixin.Heterogeneous
                     throwAsCaller(me);
                 end
             end
-            
+
             % Has `pathdef.m` function?
             if this.HasPathdef
                 % Add to path
@@ -417,15 +437,28 @@ classdef project < handle & matlab.mixin.Heterogeneous
         end
         
         
-        function flag = is_dependent_on(this, that)
+        function flag = is_dependent_on(this, that, level)
             %% IS_DEPENDENT_ON checks if THIS is dependent on THAT
             
             
             % Validate correct number of arguments
             try
+                % THIS.IS_DEPENDENT_ON(THAT)
+                % THIS.IS_DEPENDENT_ON(THAT, LEVEL)
+                narginchk(2, 3);
+                
+                % THIS.IS_DEPENDENT_ON(...)
+                % F = THIS.IS_DEPENDENT_ON(...)
+                nargoutchk(0, 1);
+                
                 assert(numel(this) == numel(that) || numel(this) == 1 && numel(that) > 1 || numel(that) == 1 && numel(this) > 1, 'Matrix dimensions must agree');
             catch me
                 throwAsCaller(me);
+            end
+            
+            % Level of checking for dependency
+            if nargin < 3 || isempty(level)
+                level = 'flat';
             end
             
             % Repeat 1x1 sized THIS to match size of THAT
@@ -447,13 +480,26 @@ classdef project < handle & matlab.mixin.Heterogeneous
                 for iDep = 1:this(iThis).NDependencies
                     % If the current dependency is the other object or if the
                     % current dependency recursively depends on that...
-                    if ( this(iThis).Dependencies(iDep) == that(iThis) ...
-                        || this(iThis).Dependencies(iDep).is_dependent_on(that(iThis)) ) ...
-                        && this(iThis) ~= that(iThis)
-                        % Then we depend on it
-                        flag(iThis) = 1;
-                        % and break the loop
-                        break
+                    switch lower(level)
+                        % Flat dependency checking: Only first level of
+                        % dependencies
+                        case 'flat'
+                            if this(iThis).Dependencies(iDep) == that(iThis) ...
+                                && this(iThis) ~= that(iThis)
+                                % Then we depend on it
+                                flag(iThis) = 1;
+                                % and break the loop
+                                break
+                            end
+                        case 'deep'
+                            if ( this(iThis).Dependencies(iDep) == that(iThis) ...
+                                || this(iThis).Dependencies(iDep).is_dependent_on(that(iThis), 'deep') ) ...
+                                && this(iThis) ~= that(iThis)
+                                % Then we depend on it
+                                flag(iThis) = 1;
+                                % and break the loop
+                                break
+                            end
                     end
                 end
             end
@@ -461,15 +507,28 @@ classdef project < handle & matlab.mixin.Heterogeneous
         end
         
         
-        function flag = is_dependency_of(this, that)
+        function flag = is_dependency_of(this, that, level)
             %% IS_DEPENDENCY_OF checks if THIS is a dependency of THAT
             
             
             % Validate correct number of arguments
             try
+                % THIS.IS_DEPENDENCY_OF(THAT)
+                % THIS.IS_DEPENDENCY_OF(THAT, LEVEL)
+                narginchk(2, 3);
+                
+                % THIS.IS_DEPENDENCY_OF(...)
+                % F = THIS.IS_DEPENDENCY_OF(...)
+                nargoutchk(0, 1);
+                
                 assert(numel(this) == numel(that) || numel(this) == 1 && numel(that) > 1 || numel(that) == 1 && numel(this) > 1, 'Matrix dimensions must agree');
             catch me
                 throwAsCaller(me);
+            end
+            
+            % Level of checking for dependency
+            if nargin < 3 || isempty(level)
+                level = 'flat';
             end
             
             % Repeat 1x1 sized THIS to match size of THAT
@@ -491,15 +550,69 @@ classdef project < handle & matlab.mixin.Heterogeneous
                 for iDep = 1:this(iThis).NDependents
                     % If the current dependency is the other object or if the
                     % current dependency recursively is dependent on that...
-                    if ( this(iThis).Dependents(iDep) == that(iThis) ...
-                        || this(iThis).Dependents(iDep).is_dependency_of(that(iThis)) ) ...
-                        && this(iThis) ~= that(iThis)
-                        % Then we are dependent on it
-                        flag(iThis) = 1;
-                        % and break the loop
-                        break
+                    switch lower(level)
+                        % Flat dependency checking: Only first level of
+                        % dependencies
+                        case 'flat'
+                            if this(iThis).Dependents(iDep) == that(iThis) ...
+                                && this(iThis) ~= that(iThis)
+                                % Then we are dependent on it
+                                flag(iThis) = 1;
+                                % and break the loop
+                                break
+                            end
+                        % Deep dependency checking: All levels of dependencies
+                        case 'deep'
+                            if ( this(iThis).Dependents(iDep) == that(iThis) ...
+                                || this(iThis).Dependents(iDep).is_dependency_of(that(iThis), 'deep') ) ...
+                                && this(iThis) ~= that(iThis)
+                                % Then we are dependent on it
+                                flag(iThis) = 1;
+                                % and break the loop
+                                break
+                            end
                     end
                 end
+            end
+            
+        end
+        
+    end
+    
+    
+    
+    %% AXES OVERRIDERS
+    methods
+        
+        function varargout = plot(this, varargin)
+            %% PLOT the dependencies and dependents of this project
+            
+            
+            % Collect all arguments
+            args = [{this}, varargin];
+            
+            % Split the arguments
+            [this, ax, args] = projman.project.splitargs(args{:});
+            
+            % Get the correct plot axes
+            ax = newplot(ax);
+            
+            % Turn this object into a digraph
+            G = this.digraph();
+            
+            % Plot the graph
+            h = plot(ax ...
+                , G ...
+                , 'LineWidth', 2 ...
+                , 'Layout', 'layered' ...
+            );
+            
+            % Update drawing
+            drawnow()
+            
+            % Assign output quantities
+            if nargout > 0
+                varargout{1} = h;
             end
             
         end
@@ -518,6 +631,25 @@ classdef project < handle & matlab.mixin.Heterogeneous
             flag = this.Exists;
             
         end
+        
+        
+        function flag = isequal(this, that)
+            %% ISEQUAL compares THIS and THAT to be the same project
+            
+            
+            flag = strcmpi({this.Path}, {that.Path});
+            
+        end
+        
+        
+        function flag = isequaln(this, that)
+            %% ISEQUALN compares THIS and THAT to be the same project
+            
+            
+            flag = strcmpi({this.Path}, {that.Path});
+            
+        end
+        
         
         function flag = eq(this, that)
             %% EQ compares if two PROJECT objects are the same
@@ -601,6 +733,22 @@ classdef project < handle & matlab.mixin.Heterogeneous
             t.Path = {this.Path}.';
             % And set the dependencies
             t.Dependencies = arrayfun(@(ii) char(ii.Dependencies), this, 'UniformOutput', false).';
+            
+        end
+        
+        
+        function dg = digraph(this)
+            %% DIGRAPH turns the project and its dependencies into a directed graph
+            
+            
+            % Resolve project dependencies
+            deps = union(this.resolve_dependencies(), this);
+
+            % Get the adjacency matrix
+            A = this.adjacency(deps);
+
+            % Create the directed graph object
+            dg = digraph(A, {deps.Name});
             
         end
         
@@ -732,7 +880,42 @@ classdef project < handle & matlab.mixin.Heterogeneous
     
     
     
+    %% STATIC PROTECTED METHOD
+    methods ( Static, Access = protected )
+        
+        function [this, ax, args] = splitargs(this, varargin)
+            %% SPLITARGS splits arguments given to axes plot functions
+            
+            
+            args = [{this}, varargin];
+            [ax, args, ~] = axescheck(args{:});
+            this = args{1};
+            args = args(2:end);
+            
+        end
+        
+    end
+    
+    
+    %% PROTECTED METHODS
     methods ( Access = protected )
+        
+        function A = adjacency(this, projs)
+            %% ADJACENCY builds the adjacency matrix of dependencies for the given projects
+            
+            
+            % Now we need to properly resolve the dependencies
+            A = zeros(numel(projs), numel(projs));
+            
+            % Loop over every project
+            for iP = 1:numel(projs)
+                % Mark all the dependencies of the current project with the
+                % others in the adjacency matrix
+                A(:,iP) = projs(iP).is_dependency_of(projs);
+            end
+            
+        end
+        
         
         function warningstate(this, state)
             %% WARNINGSTATE
