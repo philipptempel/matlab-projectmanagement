@@ -11,6 +11,14 @@ classdef manager < handle
     end
     
     
+    %% WRITE-PROTECTED PROPERTIES
+    properties ( SetAccess = protected )
+        
+        Loaded
+        
+    end
+    
+    
     %% STATIC METHODS
     methods ( Static )
         
@@ -102,6 +110,9 @@ classdef manager < handle
                 
                 % Activate project
                 p.activate();
+                
+                % And mark it as loaded
+                this.Loaded = horzcat(this.Loaded, p);
             catch me
                 throwAsCaller(me);
             end
@@ -133,85 +144,6 @@ classdef manager < handle
             end
             
         end
-        
-        
-%         function varargout = subsref(this, s)
-%             %% SUBSREF
-%             switch s(1).type
-%                 case '.'
-% %                     if length(s) == 1
-% %                         % Implement this.PropertyName
-% %                         ...
-%                     if length(s) == 2 && strcmp(s(2).type, '()')
-%                         % Implement this.PropertyName(indices)
-%                         % Check if the called index is a real property of this
-%                         % object
-%                         if isprop(this, s(1).subs)
-%                             % Pass down to built-in subsref function
-%                             [varargout{1:nargout}] = builtin('subsref', this, s);
-%                         % Here we are handling passing a function call to the
-%                         % matching project
-%                         else
-%                             % Name of the project being called
-%                             chProj = s(2).subs{1};
-%                             % Name of function to call on project
-%                             chFunc = s(1).subs;
-%                             try
-%                                 % Find the project
-%                                 p = this.find(chProj);
-%                                 % Call the function on the child
-%                                 [varargout{1:nargout}] = p.(chFunc);
-%                             catch me
-%                                 throwAsCaller(me);
-%                             end
-%                         end
-%                     else
-%                         [varargout{1:nargout}] = builtin('subsref', this, s);
-%                     end
-%                 case '()'
-%                     if length(s) == 1
-%                         % Implement this(name)
-%                         try
-%                             % Get project name
-%                             chProj = s(1).subs{1};
-%                             
-%                             % And find the project
-%                             [varargout{1:nargout}] = this.find(chProj);
-%                         catch me
-%                             throwAsCaller(me);
-%                         end
-%                     elseif length(s) == 2 && strcmp(s(2).type, '.')
-%                         % Implement this(ind).PropertyName
-%                         try
-%                             % Get project name
-%                             chProj = s(1).subs{1};
-%                             % Function to call
-%                             chFunc = s(2).subs{1};
-%                             
-%                             % Handle
-%                             try
-%                                 % And find the project
-%                                 p = this.find(chProj);
-%                                 % Call the function
-%                                 p.(chFunc);
-%                             catch me
-%                                 throwAsCaller(me);
-%                             end
-%                             
-%                         catch me
-%                             throwAsCaller(me);
-%                         end
-%                     else
-%                         % Use built-in for any other expression
-%                         [varargout{1:nargout}] = builtin('subsref', this, s);
-%                     end
-%                 case '{}'
-%                     % Use built-in for any other expression
-%                     [varargout{1:nargout}] = builtin('subsref', this, s);
-%                 otherwise
-%                     error('Not a valid indexing expression')
-%             end
-%         end
         
     end
     
