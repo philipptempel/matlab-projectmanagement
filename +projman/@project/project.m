@@ -23,6 +23,16 @@ classdef (InferiorClasses = {?matlab.graphics.axis.Axes}) project < handle & mat
     end
     
     
+    
+    %% WRITE-PROTECTED METHODS
+    properties ( SetAccess = protected )
+        
+        % Flag if project is activated or not
+        IsActivated
+        
+    end
+    
+    
     %% DEPENDENT PUBLIC PROPERTIES
     properties ( Dependent )
         
@@ -206,6 +216,9 @@ classdef (InferiorClasses = {?matlab.graphics.axis.Axes}) project < handle & mat
                 
                 % Lastly, go to this project
                 this.go();
+                
+                % Mark as activated
+                this.IsActivated = true;
             catch me
                 throwAsCaller(me);
             end
@@ -229,20 +242,14 @@ classdef (InferiorClasses = {?matlab.graphics.axis.Axes}) project < handle & mat
                     % And reset the original working directory path
                     this.OriginalWD = '';
                 end
+                
+                % Mark as non-activated
+                this.IsActivated = false;
             catch me
                 throwAsCaller(me);
             end
             
         end
-        
-        
-%         function delete(this)
-%             %% DELETE the object resolves in the project to be deactivated
-%             
-%             
-%             this.deactivate();
-%             
-%         end
         
         
         function that = saveobj(this)

@@ -14,7 +14,13 @@ classdef manager < handle
     %% WRITE-PROTECTED PROPERTIES
     properties ( SetAccess = protected )
         
-        Loaded
+    end
+    
+    
+    %% DEPENDENT PUBLIC PROPERTIES
+    properties ( Dependent )
+        
+        Activated
         
     end
     
@@ -108,15 +114,34 @@ classdef manager < handle
                 % Find project
                 p = this.find(name);
                 
-                % Activate project
-                p.activate();
-                
-                % And mark it as loaded
-                this.Loaded = horzcat(this.Loaded, p);
+                % Only continue if project isn't activated
+                if ~p.IsActivated
+                    % Activate project
+                    p.activate();
+                end
             catch me
                 throwAsCaller(me);
             end
             
+        end
+        
+        
+        function deactivate(this, name)
+            %% DEACTIVATE a project
+            
+            
+            try
+                % Find project
+                p = this.find(name);
+                
+                % Check if it is activated
+                if p.IsActivated
+                    % Deactivate project
+                    p.deactivate();
+                end
+            catch me
+                throwAsCaller(me);
+            end
         end
         
     end
@@ -141,6 +166,30 @@ classdef manager < handle
                 clear('p');
             catch me
                 throwAsCaller(me);
+            end
+            
+        end
+        
+    end
+    
+    
+    
+    %% GETTERS
+    methods
+        
+        function p = get.Activated(this)
+            %% GET.ACTIVATED returns all activated projects
+            
+            
+            % Find activated projects
+            idx = [this.Projects.IsActivated];
+            
+            % If we found activated projects
+            if ~isempty(idx)
+                p = this.Projects(idx);
+            % No activated projects found
+            else
+                p = projman.project.empty(1, 0);
             end
             
         end
