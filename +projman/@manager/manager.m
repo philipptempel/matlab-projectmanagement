@@ -25,6 +25,7 @@ classdef manager < handle
     end
     
     
+    
     %% STATIC METHODS
     methods ( Static )
         
@@ -46,13 +47,19 @@ classdef manager < handle
                     chComputername = getenv('HOSTNAME');
                 end
             end
+            
+            % Check userpath is not empty
+            if isempty(userpath)
+                userpath('reset');
+            end
 
             % Build the filename
-            f = fullfile(fileparts(which('projman.manager')), '..', sprintf('%s.mat', matlab.lang.makeValidName(chComputername)));
+            f = fullfile(userpath, sprintf('projects_%s.mat', matlab.lang.makeValidName(chComputername)));
             
         end
         
     end
+    
     
     
     %% STATIC PROTECTED METHODS
@@ -133,6 +140,7 @@ classdef manager < handle
         end
         
     end
+    
     
     
     %% GENERAL METHODS
@@ -236,6 +244,7 @@ classdef manager < handle
     end
     
     
+    
     %% OVERRIDERS
     methods
         
@@ -292,7 +301,7 @@ classdef manager < handle
         
         
         function load_projects_(this)
-            %% LOAD_PROJECTS_ loads the projects for this file
+            %% LOAD_PROJECTS_ loads the projects for this computer
             
             
             % Load the projects
