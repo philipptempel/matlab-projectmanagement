@@ -137,6 +137,7 @@ classdef manager < handle
                 end
                 d = horzcat(d, dl(end,end));
             end
+            
         end
         
     end
@@ -239,6 +240,22 @@ classdef manager < handle
             catch me
                 throwAsCaller(me);
             end
+        end
+        
+        
+        function p = path(this, name)
+            %% PATH gets the path of the given project
+            
+            
+            try
+                % Find project
+                p = this.find(name);
+                
+                p = p.Path;
+            catch me
+                throwAsCaller(me);
+            end
+            
         end
         
     end
