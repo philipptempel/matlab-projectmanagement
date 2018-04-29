@@ -354,7 +354,18 @@ classdef (InferiorClasses = {?matlab.graphics.axis.Axes}) project < handle & mat
             
             
             try
-                p = run(this.PathdefPath);
+                % Get current working directory
+                chCWD = pwd;
+                
+                % Change to the directory of the project
+                cd(this.Path);
+                
+                % Make a cleanup object to return to our old working directory
+                % once this function is done
+                coCleaner = onCleanup(@() cd(chCWD));
+                
+                % Run the pathdef file
+                p = pathdef();
             catch me
                 throwAsCaller(me);
             end
@@ -387,9 +398,9 @@ classdef (InferiorClasses = {?matlab.graphics.axis.Axes}) project < handle & mat
                 try
                     for iP = 1:numel(p)
                         % Add to path
-                        addpath(p)
+                        addpath(p{iP})
                         % Store as added to path
-                        ceAdded{end+1} = p;
+                        ceAdded = horzcat(ceAdded, p{iP});
                     end
                 catch me
                     % Trigger warning
@@ -429,15 +440,15 @@ classdef (InferiorClasses = {?matlab.graphics.axis.Axes}) project < handle & mat
                 try
                     for iP = 1:numel(p)
                         % Remove from path
-                        rmpath(p);
+                        rmpath(p{iP});
                         % Store as added to path
-                        ceRemoved{end+1} = p;
+                        ceRemoved = horzcat(ceRemoved, p{iP});
                     end
                 catch me
                     % Trigger warning
                     warning(me.identifier, me.message);
-                    % And remove all already added paths
-                    this.add_paths(ceRemoved{:});
+%                     % And add back all already removed paths
+%                     this.add_paths(ceRemoved{:});
                 end
             end
             
@@ -882,7 +893,7 @@ classdef (InferiorClasses = {?matlab.graphics.axis.Axes}) project < handle & mat
             %% GET.HASPATHDEF checks if the project has a `pathdef.m` function or not
             
             
-            flag = 2 == exist(this.ConfigPath, 'file');
+            flag = 2 == exist(this.PathdefPath, 'file');
             
         end
         
