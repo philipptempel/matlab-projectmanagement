@@ -6,7 +6,8 @@ classdef manager < handle
     %% PUBLIC PROPERTIES
     properties
         
-        Projects
+        % Collection of projects found
+        Projects@projman.project = projman.project.empty(1, 0)
         
     end
     
@@ -20,6 +21,7 @@ classdef manager < handle
     %% DEPENDENT PUBLIC PROPERTIES
     properties ( Dependent )
         
+        % Array of activated projects
         Activated
         
     end
@@ -182,6 +184,30 @@ classdef manager < handle
                 else
                     throwAsCaller(addCause(MException('PHILIPPTEMPEL:PROJMAN:PROJMAN:MANAGER:FIND:ProjectNotFound', 'Project could not be found. Make sure there is no typo in the name and that the project exists.'), me));
                 end
+            end
+            
+        end
+        
+        
+        function varargout = list(this, prop)
+            %% LIST the projects or a property of the projects
+            
+            
+            % Default property
+            if nargin < 2 || isempty(prop)
+                prop = 'Name';
+            end
+            
+            try
+                % Return output?
+                if nargout > 0
+                    varargout{1} = {this.Projects.(prop)};
+                % Directly display output
+                else
+                    display({this.Projects.(prop)});
+                end
+            catch me
+                throwAsCaller(me);
             end
             
         end
