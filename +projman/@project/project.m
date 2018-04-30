@@ -28,7 +28,7 @@ classdef (InferiorClasses = {?matlab.graphics.axis.Axes}) project < handle & mat
     properties ( SetAccess = protected )
         
         % Flag if project is activated or not
-        IsActivated
+        IsActivated = false
         
     end
     
