@@ -268,22 +268,6 @@ classdef manager < handle
             end
         end
         
-        
-        function p = path(this, name)
-            %% PATH gets the path of the given project
-            
-            
-            try
-                % Find project
-                p = this.find(name);
-                
-                p = p.Path;
-            catch me
-                throwAsCaller(me);
-            end
-            
-        end
-        
     end
     
     

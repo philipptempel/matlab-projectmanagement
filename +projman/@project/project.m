@@ -773,6 +773,24 @@ classdef (InferiorClasses = {?matlab.graphics.axis.Axes}) project < handle & mat
             
         end
         
+        
+        function p = path(this)
+            %% PATH returns this project's base path
+            
+            
+            p = this.Path;
+            
+        end
+        
+        
+        function f = fullfile(this, varargin)
+            %% FULLFILE returns the file pathed relative to this project
+            
+            
+            f = fullfile(this.Path, varargin{:});
+            
+        end
+        
     end
     
     
