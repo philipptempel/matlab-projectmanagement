@@ -17,9 +17,6 @@ classdef (InferiorClasses = {?matlab.graphics.axis.Axes}) project < handle & mat
         % Array of dependent projects of this project
         Dependents
         
-        % Project configuration
-        Config = struct();
-        
     end
     
     
@@ -56,6 +53,9 @@ classdef (InferiorClasses = {?matlab.graphics.axis.Axes}) project < handle & mat
         
         % Flag if project has `finish.m` file or not
         HasFinish
+        
+        % Structure of the project's configuration
+        Config
         
         % Path to the `config.mat` file
         ConfigPath
@@ -130,9 +130,6 @@ classdef (InferiorClasses = {?matlab.graphics.axis.Axes}) project < handle & mat
             if nargin > 2 && ~isempty(varargin{2})
                 this.Dependencies = varargin{2};
             end
-            
-            % Load the config file
-            this.loadconf();
             
         end
         
@@ -252,59 +249,6 @@ classdef (InferiorClasses = {?matlab.graphics.axis.Axes}) project < handle & mat
         end
         
         
-        function that = saveobj(this)
-            %% SAVEOBJ implements the saveobj methods
-            
-            
-            % Save the config
-            this.saveconf();
-            
-            % Just copy the file
-            that = this;
-            
-        end
-        
-        
-        function saveconf(this)
-            %% SAVECONF saves the configuration to the project's folder
-            
-            
-            % Save the config file if there is some
-            if ~isempty(fieldnames(this.Config))
-                % Get a scalar config struct to be saveable
-                conf = this.Config;
-
-                % Save the config structure
-                save(this.ConfigPath, '-struct', 'conf');
-
-                % And remove that temporary structure again
-                clear('conf');
-            end
-            
-        end
-        
-        
-        function varargout = loadconf(this)
-            %% LOADCONF loads the config file
-            
-            
-            if this.HasConfig
-                try
-                    % Load the config file
-                    this.Config = load(this.ConfigPath);
-                catch me
-                    throwAsCaller(me);
-                end
-            end
-
-            % Assign output quantities
-            if nargout > 0
-                varargout{1} = this.Config;
-            end
-            
-        end
-        
-        
         function startup(this)
             %% STARTUP starts this project i.e., runs its `startup.m` function/script
             
@@ -368,6 +312,28 @@ classdef (InferiorClasses = {?matlab.graphics.axis.Axes}) project < handle & mat
                 p = projpath();
             catch me
                 throwAsCaller(me);
+            end
+            
+        end
+        
+        
+        function v = config(this, prop, default)
+            %% CONFIG gets a config value of the given project
+            
+            
+            % Default default value
+            if nargin < 3 || isempty(default)
+                default = [];
+            end
+            
+            % If the requested property exists
+            if isfield(this.Config, prop)
+                % We will get its value to return it to the user
+                v = this.Config.(prop);
+            % Requested property/field does not exist, so return the default
+            % value
+            else
+                v = default;
             end
             
         end
@@ -811,6 +777,23 @@ classdef (InferiorClasses = {?matlab.graphics.axis.Axes}) project < handle & mat
             
         end
         
+        
+        function set.Config(this, c)
+            %% SET.CONFIG sets the config for this object
+            
+            
+            % Validate arguments
+            try
+                validateattributes(c, {'struct'}, {}, mfilename, 'Config');
+            catch me
+                throwAsCaller(me);
+            end
+            
+            % And save the config
+            save(this.ConfigPath, '-struct', 'c'); %#ok<MCSUP>
+            
+        end
+        
     end
     
     
@@ -880,6 +863,23 @@ classdef (InferiorClasses = {?matlab.graphics.axis.Axes}) project < handle & mat
         end
         
         
+        function c = get.Config(this)
+            %% GET.CONFIG gets the project's config
+            
+            
+            % If there is a config file...
+            if this.HasConfig
+                % Load it
+                c = load(this.ConfigPath);
+            % No config file in the project's folder
+            else
+                % So default to an empty structure
+                c = struct();
+            end
+            
+        end
+        
+        
         function p = get.ConfigPath(this)
             %% GET.CONFIGPATH gets the path to the `config.mat` file
             
@@ -934,6 +934,7 @@ classdef (InferiorClasses = {?matlab.graphics.axis.Axes}) project < handle & mat
         end
         
     end
+    
     
     
     %% PROTECTED METHODS
