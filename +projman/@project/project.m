@@ -63,10 +63,10 @@ classdef (InferiorClasses = {?matlab.graphics.axis.Axes}) project < handle & mat
         % Flag if project has `config.mat` file or not
         HasConfig
         
-        % Path to the `pathdef.m` file
+        % Path to the `projpath.m` file
         PathdefPath
         
-        % Flag if project has `pathdef.m` function or not
+        % Flag if project has `projpath.m` function or not
         HasPathdef
         
     end
@@ -310,7 +310,7 @@ classdef (InferiorClasses = {?matlab.graphics.axis.Axes}) project < handle & mat
             
             
             try
-                % Has `pathdef.m` function?
+                % Has `projpath.m` function?
                 if this.HasPathdef
                     % Add to path
                     this.add_paths(this.pathdef());
@@ -350,7 +350,7 @@ classdef (InferiorClasses = {?matlab.graphics.axis.Axes}) project < handle & mat
         
         
         function p = pathdef(this)
-            %% PATHDEF gets this projects `pathdef()` result
+            %% PATHDEF gets this projects `projpath()` result
             
             
             try
@@ -365,7 +365,7 @@ classdef (InferiorClasses = {?matlab.graphics.axis.Axes}) project < handle & mat
                 coCleaner = onCleanup(@() cd(chCWD));
                 
                 % Run the pathdef file
-                p = pathdef();
+                p = projpath();
             catch me
                 throwAsCaller(me);
             end
@@ -902,7 +902,7 @@ classdef (InferiorClasses = {?matlab.graphics.axis.Axes}) project < handle & mat
             %% GET.PATHDEFPATH gets the path to the `pathdef.m` function
             
             
-            p = fullfile(this.Path, 'pathdef.m');
+            p = fullfile(this.Path, 'projpath.m');
             
         end
         
