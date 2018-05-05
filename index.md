@@ -61,6 +61,22 @@ With your computername being appended to the filename you can have different pro
 Care to know the exact filename? See `projman.manager.filename()`.
 
 
+### Removing an Existing Project
+
+If you feel like no longer needing quick access to a project, you can simply remove it from the project managers `Projects` property and save the manager anew.
+This will technically remove any knowledge of the project manager on the project.
+```matlab
+% Get an instance of the project manager
+pjm = pm('reset');
+% Remove the project using very conveneit MATLAB syntax
+pjm.Projects(pjm.Projects == find(pm, 'project a')) = [];
+% And save the project manager object
+save(pjm);
+```
+
+Please note that removing a project from the project manager **DOES NOT** remove the project or any files form your file system.
+
+
 ### Changing Project Properties
 
 To change properties of a project, you need to find it inside the list of projects in the project manager.
