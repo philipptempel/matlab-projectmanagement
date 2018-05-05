@@ -58,7 +58,7 @@ save(pjm)
 
 By default, the project manager configuration i.e., all `projman.project` objects, will be saved to `userpath/projects_<computername>.mat`.
 With your computername being appended to the filename you can have different projects on different computers or the same projects with different locations on different computers.
-Care to know the exact filename? See `projman.manager.filename()`.
+Care to know the exact filename? See `projman.helper.filename()`.
 
 
 ### Removing an Existing Project
