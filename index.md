@@ -50,8 +50,8 @@ This is as simple as concatenating the old projects with the new one and saving 
 ```matlab
 % Get a clean project manager instance
 pjm = pm('reset');
-% Append the new project p to the existing projects
-pjm.Projects = horzcat(pjm.Projects, pm)
+% Append the new project p to the existing projects by concatenation
+pjm = [pjm, p]
 % And now save the project manager instance
 save(pjm)
 ```
@@ -74,7 +74,7 @@ Then, `p` is a `projman.project` object that you can just change properties of e
 ```matlab
 p.Path = '/new/path/to/project';
 % Update the project inside the project manager instance pjm
-pjm.Projects = horzcat(pjm.Projects, p);
+pjm = horzcat(pjm, p);
 % And save everything
 save(pjm)
 ```
