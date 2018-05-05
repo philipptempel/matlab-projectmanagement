@@ -24,8 +24,8 @@ classdef (InferiorClasses = {?matlab.graphics.axis.Axes}) project < handle & mat
     %% WRITE-PROTECTED METHODS
     properties ( SetAccess = protected )
         
-        % Files open in the editor when closing the project
-        EditorFiles
+%         % Files open in the editor when closing the project
+%         EditorFiles
         
     end
     
@@ -33,8 +33,17 @@ classdef (InferiorClasses = {?matlab.graphics.axis.Axes}) project < handle & mat
     %% DEPENDENT PUBLIC PROPERTIES
     properties ( Dependent )
         
+        % Get all open editor files that belong to this project
+        Documents
+        
+        % Structure of the project's configuration
+        Config
+        
+        % Flag if project exists i.e., path exists
+        Exists
+        
         % Flag if project is activated or not
-        IsLoaded = false
+        IsLoaded
         
         % Number of project dependencies
         NDependencies
@@ -48,9 +57,6 @@ classdef (InferiorClasses = {?matlab.graphics.axis.Axes}) project < handle & mat
         % Flag if there are dependent projects
         HasDependents
         
-        % Flag if project exists i.e., path exists
-        Exists
-        
         % Path to `startup.m` file
         StartupPath
         
@@ -63,9 +69,6 @@ classdef (InferiorClasses = {?matlab.graphics.axis.Axes}) project < handle & mat
         % Flag if project has `finish.m` file or not
         HasFinish
         
-        % Structure of the project's configuration
-        Config
-        
         % Path to the `config.mat` file
         ConfigPath
         
@@ -77,6 +80,12 @@ classdef (InferiorClasses = {?matlab.graphics.axis.Axes}) project < handle & mat
         
         % Flag if project has `projpath.m` function or not
         HasPathdef
+        
+        % Path to the `documents.mat` file
+        DocumentsPath
+        
+        % Flag if projet has `documents.mat` file or not
+        HasDocuments
         
     end
     
@@ -252,6 +261,9 @@ classdef (InferiorClasses = {?matlab.graphics.axis.Axes}) project < handle & mat
                 % Startup this project
                 this.startup()
                 
+                % Load the documents into editor
+                this.load_documents();
+                
                 % Change to the project
                 this.cd();
             catch me
@@ -277,6 +289,9 @@ classdef (InferiorClasses = {?matlab.graphics.axis.Axes}) project < handle & mat
                 
                 % Remove this project from MATLAB search path
                 this.rmpath();
+                
+                % Save list of open documents
+                this.save_documents();
                 
                 % And change back to the previous working directory
                 cd(this.OriginalWD);
@@ -1008,6 +1023,24 @@ classdef (InferiorClasses = {?matlab.graphics.axis.Axes}) project < handle & mat
             
         end
         
+        
+        function set.Documents(this, ef)
+            %% SET.DOCUMENTS sets the previous session's editor files of this object i.e., opens them in the editor
+            
+            
+            % If there are files
+            if ~isempty(ef)
+                % Loop over every file
+                for iFile = 1:size(ef, 1)
+                    % Open the file in the editor
+                    d = matlab.desktop.editor.openDocument(ef.Filename(iFile,1:end));
+                    % and place the cursor at the right spot
+                    d.goToPositionInLine(ef.Selection(iFile,1), ef.Selection(iFile,3));
+                end
+            end
+            
+        end
+        
     end
     
     
@@ -1202,6 +1235,38 @@ classdef (InferiorClasses = {?matlab.graphics.axis.Axes}) project < handle & mat
             
         end
         
+        
+        function e = get.DocumentsPath(this)
+            %% GET.DOCUMENTSPATH gets the path to the `documents.mat` file
+            
+            
+            e = fullfile(this.Path, 'documents.mat');
+            
+        end
+        
+        
+        function flag = get.HasDocuments(this)
+            %% GET.HASDOCUMENTS checks if the project has a `documents.mat` file or not
+            
+            
+            flag = 2 == exist(this.DocumentsPath, 'file');
+            
+        end
+        
+        
+        function ef = get.Documents(this)
+            %% GET.DOCUMENTS gets all open editor files of this project
+            
+            
+            % Get all open files
+            ceFiles = matlab.desktop.editor.getAll();
+            
+            % Now file the files such that we only have ones that are actually
+            % from within this project's root folder
+            ef = ceFiles(startsWith({ceFiles.Filename}, this.Path) & [ceFiles.Opened]);
+            
+        end
+        
     end
     
     
@@ -1304,6 +1369,70 @@ classdef (InferiorClasses = {?matlab.graphics.axis.Axes}) project < handle & mat
                 end
             catch me
                 throwAsCaller(me);
+            end
+            
+        end
+        
+        
+        function save_documents(this)
+            %% SAVE_DOCUMENTS saves the list of open project files in the MATLAB EDITOR
+            
+            
+            % Get the open editor files of this project
+            ef = this.Documents;
+
+            % Store the documents in a file for later use
+            if ~isempty(ef)
+                % Cleanup the ef array (it contains some fields that cannot be
+                % serialized)
+                ef = table(vertcat(ef.Filename), vertcat(ef.Selection), 'VariableNames', {'Filename', 'Selection'});
+                
+                % Save to MAT file
+                save(this.DocumentsPath, 'ef');
+            % No currently open documents, so make sure the `documents.mat`
+            % file doesn't accidentally exist
+            else
+                % If the documents file exists
+                if this.HasDocuments
+                    % Try to delete the file
+                    try
+                        delete(this.DocumentsPath);
+                    catch me
+                        warning(me.identifier, '%s', me.message);
+                    end
+                end
+            end
+
+            % Free some memory
+            clear('ef');
+
+        end
+        
+        
+        function load_documents(this)
+            %% LOAD_DOCUMENTS loads the list of open project files in the MATLAB editor
+            
+            
+            
+            % Load the projects
+            try
+                % Create a matfile object
+                moFile = matfile(this.DocumentsPath);
+                
+                % Get the variables inside the matfile
+                stVariables = whos(moFile);
+                
+                % If there are variables, we will get them
+                if numel(stVariables)
+                    % Find the first variable being of type 'cell'
+                    [~, idx] = find(strcmp({stVariables.name}, 'ef') & strcmp({stVariables.class}, 'table'), 1, 'first');
+                    
+                    % Get the document names and we're done
+                    this.Documents = moFile.(stVariables(idx).name);
+                end
+            catch me
+                % Init empty documents array
+                this.Documents = cell(1, 0);
             end
         end
         
