@@ -1,11 +1,46 @@
 classdef helper
     % HELPER are helper methods for package PROJMAN
     
+    
+    %% PUBLIC PROPERTIES
     properties
         
     end
     
+    
+    
+    %% GENERAL STATIC METHODS
     methods ( Static )
+        
+        function f = filename()
+            %% FILENAME returns the computer aware filename of the projects file
+            
+            
+            % Call the system command `hostname` and check its result status
+            [dStatus, chComputername] = system('hostname');
+
+            % If the previous command call failed, we will need to infer the computer name
+            % from an environment variable
+            if dStatus ~= 0
+                % On windows
+                if ispc
+                    chComputername = getenv('COMPUTERNAME');
+                % On anything else
+                else      
+                    chComputername = getenv('HOSTNAME');
+                end
+            end
+            
+            % Check userpath is not empty
+            if isempty(userpath)
+                userpath('reset');
+            end
+
+            % Build the filename
+            f = fullfile(userpath, sprintf('projects_%s.mat', matlab.lang.makeValidName(chComputername)));
+            
+        end
+        
         
         function s = mergestructs(varargin)
             %% MERGESTRUCTS merges multiple structures into one

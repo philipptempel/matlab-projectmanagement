@@ -31,35 +31,6 @@ classdef manager < handle
     %% STATIC METHODS
     methods ( Static )
         
-        function f = filename()
-            %% FILENAME returns the computer aware filename of the projects file
-            
-            
-            % Call the system command `hostname` and check its result status
-            [dStatus, chComputername] = system('hostname');
-
-            % If the previous command call failed, we will need to infer the computer name
-            % from an environment variable
-            if dStatus ~= 0
-                % On windows
-                if ispc
-                    chComputername = getenv('COMPUTERNAME');
-                % On anything else
-                else      
-                    chComputername = getenv('HOSTNAME');
-                end
-            end
-            
-            % Check userpath is not empty
-            if isempty(userpath)
-                userpath('reset');
-            end
-
-            % Build the filename
-            f = fullfile(userpath, sprintf('projects_%s.mat', matlab.lang.makeValidName(chComputername)));
-            
-        end
-        
         
         function addthis(varargin)
             %% ADDTHIS adds the current working directory as new project
@@ -390,7 +361,7 @@ classdef manager < handle
                 p = this.Projects;
                 
                 % Save above variable into the file
-                save(projman.manager.filename(), 'p');
+                save(projman.helper.filename(), 'p');
                 
                 % Free some memory
                 clear('p');
@@ -447,7 +418,7 @@ classdef manager < handle
             % Load the projects
             try
                 % Create a matfile object
-                moFile = matfile(projman.manager.filename());
+                moFile = matfile(projman.helper.filename());
                 
                 % Get the variables inside the matfile
                 stVariables = whos(moFile);
