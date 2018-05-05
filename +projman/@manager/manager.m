@@ -60,6 +60,28 @@ classdef manager < handle
             
         end
         
+        
+        function addthis(varargin)
+            %% ADDTHIS adds the current working directory as new project
+            
+            
+            % Build the arguments to `projman.project`
+            varargin = [{pwd}, varargin];
+            
+            % Build a project
+            p = projman.project(varargin{:});
+            
+            % Get a projects manager instance
+            pjm = pm('reset');
+            
+            % Append project
+            pjm.Projects = [pjm.Projects, p];
+            
+            % And save PJM
+            save(pjm);
+            
+        end
+        
     end
     
     

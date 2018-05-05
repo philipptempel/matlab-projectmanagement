@@ -12,10 +12,10 @@ classdef (InferiorClasses = {?matlab.graphics.axis.Axes}) project < handle & mat
         Path
         
         % Array of direct dependencies of the project as projman.project
-        Dependencies
+        Dependencies@projman.project = projman.project.empty(1, 0)
         
         % Array of dependent projects of this project
-        Dependents
+        Dependents@projman.project = projman.project.empty(1, 0)
         
     end
     
@@ -36,8 +36,14 @@ classdef (InferiorClasses = {?matlab.graphics.axis.Axes}) project < handle & mat
         % Number of project dependencies
         NDependencies
         
+        % Flag if there are dependencies
+        HasDependencies
+        
         % Number of dependent projects
         NDependents
+        
+        % Flag if there are dependent projects
+        HasDependents
         
         % Flag if project exists i.e., path exists
         Exists
@@ -85,8 +91,34 @@ classdef (InferiorClasses = {?matlab.graphics.axis.Axes}) project < handle & mat
     %% GENERAL METHODS
     methods
         
-        function this = project(p, varargin)
+        function this = project(p, name, deps)
             %% PROJECT creates a new project object from a path
+            %
+            %   PROJECT(PATH) creates a project object at the given path. The
+            %   project name will be infered from the name of the last directory
+            %   on the path
+            %
+            %   PROJECT(PATH, NAME) sets the name of the project to NAME.
+            %
+            %   PROJECT(PATH, NAME, DEPS) creates a project with the 1xK array
+            %   of projman.project objects that this project depends on.
+            %
+            %   P = PROJECT(...) returns the newly created project object
+            %
+            %   Inputs:
+            %
+            %   P                   Path to the location of the project
+            %
+            %   NAME                Name of the project. If left empty, the name
+            %                       will be infered from the name of the
+            %                       project's last directory
+            %
+            %   DEPS                1xK projman.project array representing the
+            %                       dependencies of this project.
+            %
+            %   Outputs:
+            %
+            %   P                   Projman.project object
             
             
             try
@@ -99,17 +131,17 @@ classdef (InferiorClasses = {?matlab.graphics.axis.Axes}) project < handle & mat
                 % P = PROJECT(...)
                 nargoutchk(0, 1);
                 
-                % Validate arguments
+                % Validate path
                 validateattributes(p, {'char'}, {'nonempty'}, mfilename, 'Path');
                 
                 % Check name, if given
-                if nargin > 1 && ~isempty(varargin{1})
-                    validateattributes(varargin{1}, {'char'}, {'nonempty'}, mfilename, 'Name');
+                if nargin > 1 && ~isempty(name)
+                    validateattributes(name, {'char'}, {'nonempty'}, mfilename, 'Name');
                 end
                 
                 % Check dependencies, if given
-                if nargin > 2 && ~isempty(varargin{2})
-                    validateattributes(varargin{2}, {'projman.project'}, {'nonempty'}, mfilename, 'Dependencies');
+                if nargin > 2 && ~isempty(deps)
+                    validateattributes(deps, {'projman.project'}, {'nonempty'}, mfilename, 'Dependencies');
                 end
             catch me
                 throwAsCaller(me);
@@ -119,16 +151,16 @@ classdef (InferiorClasses = {?matlab.graphics.axis.Axes}) project < handle & mat
             this.Path = p;
             
             % If name given
-            if nargin > 1 && ~isempty(varargin{1})
-                this.Name = varargin{1};
+            if nargin > 1 && ~isempty(name)
+                this.Name = name;
             % No name given, get it from the project's path's last folder's name
             else
                 [~, this.Name, ~] = fileparts(this.Path);
             end
             
             % If dependencies given
-            if nargin > 2 && ~isempty(varargin{2})
-                this.Dependencies = varargin{2};
+            if nargin > 2 && ~isempty(deps)
+                this.Dependencies = deps;
             end
             
         end
@@ -719,7 +751,21 @@ classdef (InferiorClasses = {?matlab.graphics.axis.Axes}) project < handle & mat
             % Set the paths
             t.Path = {this.Path}.';
             % And set the dependencies
-            t.Dependencies = arrayfun(@(ii) char(ii.Dependencies), this, 'UniformOutput', false).';
+            function chdeps = chardeps(o)
+                % If there are dependencies, get all their names
+                if o.HasDependencies
+                    cedeps = arrayfun(@(d) char(d.Name), fliplr(o.resolve_dependencies()), 'UniformOutput', false);
+                % No dependencies, no names
+                else
+                    cedeps = {};
+                end
+                
+                % Turn cell into a char
+                chdeps = strjoin(cedeps, ', ');
+            end
+            
+            % Loop over all dependencies and get their names
+            t.Dependencies = arrayfun(@(t) chardeps(t), this, 'UniformOutput', false).';
             
         end
         
@@ -767,6 +813,13 @@ classdef (InferiorClasses = {?matlab.graphics.axis.Axes}) project < handle & mat
         function set.Dependencies(this, deps)
             %% SET.DEPENDENCIES sets the dependencies
             
+            
+            % Validate arguments
+            try
+                validateattributes(deps, {'projman.project'}, {}, mfilename, 'deps');
+            catch me
+                throwAsCaller(me);
+            end
             
             % Loop over each object and tell it that we are dependent on it
             for iDep = 1:numel(deps)
@@ -833,6 +886,24 @@ classdef (InferiorClasses = {?matlab.graphics.axis.Axes}) project < handle & mat
             
             
             p = fullfile(this.Path, 'startup.m');
+            
+        end
+        
+        
+        function flag = get.HasDependencies(this)
+            %% GET.HASDEPENDENCIES flags if there are dependenies defined on this object
+            
+            
+            flag = 0 ~= this.NDependencies;
+            
+        end
+        
+        
+        function flag = get.HasDependents(this)
+            %% GET.HASDEPENDENTS flags if there are dependent projects defined on this object
+            
+            
+            flag = 0 ~= this.NDependents;
             
         end
         
