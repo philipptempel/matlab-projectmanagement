@@ -351,10 +351,8 @@ classdef manager < handle
                     % Get the config
                     stConfig = proj.Config;
                     
-                    % Loop over each match and merge the config
-                    for iMatch = 1:numel(idxMatches)
-                        stConfig = mergestructs(stConfig, ps(idxMatches(iMatch)).Config);
-                    end
+                    % Merge all structs
+                    stConfig = projman.helper.mergestructs(stConfig, ps(loMatches).Config);
                     
                     % Set the updated config
                     proj.Config = stConfig;
@@ -399,6 +397,38 @@ classdef manager < handle
             catch me
                 throwAsCaller(me);
             end
+            
+        end
+        
+        
+        function C = horzcat(this, varargin)
+            %% HORZCAT concatenates this project manager with another or a set of projects
+            
+            
+            % Validate arguments
+            try
+                arrayfun(@(iArg) validateattributes(varargin{iArg}, {'projman.manager', 'projman.project'}, {'nonempty'}, mfilename, sprintf('arg(%g)', iArg)), 1:numel(varargin));
+            catch me
+                throwAsCaller(me);
+            end
+            
+            % Find all objects that are of type PROJMAN.PROJECT
+            loProjects = cellfun(@(x) isa(x, 'projman.project'), varargin);
+            ceProjects = varargin(loProjects);
+            % Find all objects that are of type PROJMAN.MANAGER
+            loManagers = cellfun(@(x) isa(x, 'projman.manager'), varargin);
+            ceManagers = varargin(loManagers);
+            
+            % Create output
+            C = this;
+            
+            % Loop over each manager
+            for iManager = 1:numel(ceManagers)
+                C.Projects = horzcat(C.Projects, ceManagers{iManager}.Projects);
+            end
+            
+            % And also assign each project
+            C.Projects = horzcat(C.Projects, ceProjects{:});
             
         end
         
