@@ -34,7 +34,7 @@ Hierarchically speaking, we assume the following project structure
             project a      project b
 ```
 such that `tooling` is dependency of both `project a` and `project b`, or, `project a` and `project b` both use functions from `tooling` and thus require `tooling` on MATLAB's search path.
-By defining these dependencies on the object level, you can simply `load` or `activate` your project `project a` and it will make sure that project `tooling` is also going to be loaded.
+By defining these dependencies on the object level, you can simply `open` your project `project a` and it will make sure that project `tooling` is also going to be loaded.
 
 ### Adding a New Project
 
@@ -83,10 +83,10 @@ If you add an existing project to the list of projects it will not result in dup
 Per definition, a project is uniquely defined by its path so no two projects can share the same path (however, `project b` may be in a subdirectory of `project a`).
 
 
-### Activating a Project
+### Opening a Project
 
-Activating a project means activating every dependency and then activating the project itself.
-During activation process, a `projpath.m` is searched which must return a cell array of paths that should be added to MATLAB search path for the project to work correctly.
+Opening a project means making sure every dependency is pushed to the MATLAB search path and lastly our main project is pushed to the MATLAB search path, too.
+During opening process, a `projpath.m` is searched which must return a cell array of paths that should be added to MATLAB search path for the project to work correctly.
 If the MATLAB search path was successfully updated, the `startup.m` function of the project is run (if it exists), inside of which you can run any startup routines.
 Lastly, the current working directory is changed to the project's root folder.
 
@@ -94,54 +94,54 @@ Lastly, the current working directory is changed to the project's root folder.
 ```matlab
 % Find the projman.project object in the list of all projects
 p = find(pm, 'tooling')
-% Activate the project
-activate(p);
+% Open the project
+open(p);
 % Or alternatively
-p.activate();
+p.open();
 ```
 The short version would be
 ```matlab
-activate(find(pm, 'tooling'))
+open(find(pm, 'tooling'))
 ```
 
 
-### Deactivating a Project
+### Closing a Project
 
-To deactivate a project i.e., reversing the activation process for the current project only, run the `deactivate` function on the project object.
+To close a project i.e., reversing the opening process for the current project only, run the `close` function on the project object.
 This will run the `finish.m` function (if it exists) and remove all paths defined in `projpath()` from the MATLAB search path.
-However, different to project activation, the dependencies are not automatically deactivated, either.
+However, different to project opening, the dependencies are not automatically removed from the MATLAB search path.
 
 #### Example
 ```matlab
 % Find the projman.project object in the list of all projects
 p = find(pm, 'tooling')
-% Deactivate the project
-deactivate(p);
+% Close the project
+close(p);
 % Or alternatively
-p.deactivate();
+p.close();
 ```
 The short version would be
 ```matlab
-deactivate(find(pm, 'tooling'))
+close(find(pm, 'tooling'))
 ```
 
 ### Going to a Project
 
 Sometimes you might want to change directories to a project.
-You can use the `go` function on the project object to change the current working directory to the project's root directory.
+You can use just `cd` on the project object to change the current working directory to the project's root directory.
 
 #### Example
 ```matlab
 % Find the projman.project object in the list of all projects
 p = find(pm, 'tooling')
 % Go to the project's root dir
-go(p);
+cd(p);
 % Or alternatively
-p.go();
+p.cd();
 ```
 The short version would be
 ```matlab
-go(find(pm, 'tooling'))
+cd(find(pm, 'tooling'))
 ```
 
 
