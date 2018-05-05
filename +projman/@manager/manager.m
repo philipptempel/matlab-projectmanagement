@@ -226,7 +226,7 @@ classdef manager < handle
                     varargout{1} = {this.Projects.(prop)};
                 % Directly display output
                 else
-                    display({this.Projects.(prop)});
+                    disp({this.Projects.(prop)});
                 end
             catch me
                 throwAsCaller(me);

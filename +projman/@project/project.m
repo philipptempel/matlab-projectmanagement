@@ -24,14 +24,17 @@ classdef (InferiorClasses = {?matlab.graphics.axis.Axes}) project < handle & mat
     %% WRITE-PROTECTED METHODS
     properties ( SetAccess = protected )
         
-        % Flag if project is activated or not
-        IsActivated = false
+        % Files open in the editor when closing the project
+        EditorFiles
         
     end
     
     
     %% DEPENDENT PUBLIC PROPERTIES
     properties ( Dependent )
+        
+        % Flag if project is activated or not
+        IsLoaded = false
         
         % Number of project dependencies
         NDependencies
@@ -83,6 +86,9 @@ classdef (InferiorClasses = {?matlab.graphics.axis.Axes}) project < handle & mat
         
         % Original working directory before this project was activated
         OriginalWD
+        
+        % Flag if this project has been activated using the `load` method
+        IsLoaded_ = false
         
     end
     
@@ -165,6 +171,276 @@ classdef (InferiorClasses = {?matlab.graphics.axis.Axes}) project < handle & mat
             
         end
         
+    end
+    
+    
+    
+    %% PROJECT HANDLING METHODS
+    methods
+        
+        function startup(this)
+            %% STARTUP executes the project's startup script/function
+            %
+            %   STARTUP(P) runs the project's startup script/function.
+            
+            
+            % Only do something if there is a `finish.m` script/function
+            if this.HasStartup
+                try
+                    % Run in the project's root dir
+                    this.run_in_projectdir(@startup);
+                catch me
+                    throwAsCaller(me);
+                end
+            end
+            
+        end
+        
+        
+        function finish(this)
+            %% FINISH executes the project's `finish` script/function
+            %
+            %   FINISH(P) runs the project's `finish` script/function 
+            
+            
+            % Only do something if there is a `finish.m` script/function
+            if this.HasFinish
+                try
+                    % Run in the project's root dir
+                    this.run_in_projectdir(@finish);
+                catch me
+                    throwAsCaller(me);
+                end
+            end
+            
+        end
+        
+        
+        function reset(this)
+            %% RESET resets the project i.e., runs its finish and startup script
+            
+            
+            try
+                % Finish the project
+                this.finish();
+                
+                % Then start it
+                this.startup();
+            catch me
+                throwAsCaller(me);
+            end
+            
+        end
+        
+        
+        function open(this)
+            %% OPEN a project
+            %
+            %   OPEN(P) opens the project by adding all its dependencies to the
+            %   MATLAB search path, adding this project's paths defintion to the
+            %   MATLAB search path, and executing the startup script of the
+            %   project
+            %
+            %   See also
+            
+            
+            % Add to path; run startup; change to directory
+            try
+                % Add this project to MATLAB search path
+                this.addpath();
+                
+                % Startup this project
+                this.startup()
+                
+                % Change to the project
+                this.cd();
+            catch me
+                throwAsCaller(me);
+            end
+        end
+        
+        
+        function close(this)
+            %% CLOSE a project
+            %
+            %   CLOSE(P) closes the project by removing its defined paths from
+            %   the MATLAB search path and running the finish script
+            %
+            %   See also
+            
+            
+            % Run finish.m; remove from path; change to original working
+            % directory
+            try
+                % Finish this project
+                this.finish()
+                
+                % Remove this project from MATLAB search path
+                this.rmpath();
+                
+                % And change back to the previous working directory
+                cd(this.OriginalWD);
+            catch me
+                throwAsCaller(me);
+            end
+            
+        end
+        
+        
+        function p = pathdef(this)
+            %% PATHDEF gets this projects `projpath()` result
+            
+            
+            try
+                % Get current working directory
+                chCWD = pwd;
+                
+                % Change to the directory of the project
+                cd(this.Path);
+                
+                % Make a cleanup object to return to our old working directory
+                % once this function is done
+                coCleaner = onCleanup(@() cd(chCWD));
+                
+                % Run the pathdef file
+                p = projpath();
+            catch me
+                throwAsCaller(me);
+            end
+            
+        end
+        
+        
+        function p = projpath(this)
+            %% PROJPATH is a wrapper for PATHDEF
+            %
+            %   See also:
+            %
+            %   PROJMAN.PROJECT.PATHDEF
+            
+            
+            p = this.pathdef();
+            
+        end
+        
+        
+        function v = config(this, prop, default)
+            %% CONFIG gets a config value of the given project
+            
+            
+            % By default return the whole config structure
+            if nargin < 2
+                v = this.Config;
+                
+                return
+            end
+            
+            % Default 'default' value
+            if nargin < 3 || isempty(default)
+                default = [];
+            end
+            
+            % If the requested property exists
+            if isfield(this.Config, prop)
+                % We will get its value to return it to the user
+                v = this.Config.(prop);
+            % Requested property/field does not exist, so return the default
+            % value
+            else
+                v = default;
+            end
+            
+        end
+        
+        
+%         function add_paths(this, varargin)
+%             %% ADD_PATHS adds the given paths to the MATLAB path
+%             %
+%             %   ADD_PATHS({P1, P2, P3}) adds the given paths to MATLAB path
+%             %
+%             %   ADD_PATHS(P1, P2, ...) adds the given paths to MATLAB path
+%             
+%             
+%             % Loop over every given path arg
+%             for iArg = 1:numel(varargin)
+%                 % Get the path
+%                 p = varargin{iArg};
+%             
+%                 % Split path chars like 'p1:p2:p3' into {p1, p2, p3}
+%                 if ~iscell(p)
+%                     p = regexp(p, pathsep, 'split');
+%                 end
+% 
+%                 % Cell array of added paths
+%                 ceAdded = cell(1, 0);
+% 
+%                 % Loop over every given path
+%                 try
+%                     for iP = 1:numel(p)
+%                         % Add to path
+%                         addpath(p{iP})
+%                         % Store as added to path
+%                         ceAdded = horzcat(ceAdded, p{iP});
+%                     end
+%                 catch me
+%                     % Trigger warning
+%                     warning(me.identifier, '%s', me.message);
+%                     % And remove all already added paths
+%                     this.rem_paths(ceAdded{:});
+%                 end
+%             end
+%         end
+        
+        
+%         function rem_paths(this, varargin)
+%             %% REM_PATHS removes the given paths from the MATLAB path
+%             %
+%             %   REM_PATHS({P1, P2, P3}) removes the given paths from MATLAB path
+%             %
+%             %   REM_PATHS(P1, P2, ...) removes the given paths from MATLAB path
+%             
+%             
+%             % Set the 'MATLAB:rmpath:DirNotFound' warning to off
+%             this.warningstate('off');
+%             
+%             % Loop over every given path arg
+%             for iArg = 1:numel(varargin)
+%                 % Get the path
+%                 p = varargin{iArg};
+%             
+%                 % Split path chars like 'p1:p2:p3' into {p1, p2, p3}
+%                 if ~iscell(p)
+%                     p = regexp(p, pathsep, 'split');
+%                 end
+% 
+%                 % Cell array of added paths
+%                 ceRemoved = cell(1, 0);
+% 
+%                 % Loop over every given path
+%                 try
+%                     for iP = 1:numel(p)
+%                         % Remove from path
+%                         rmpath(p{iP});
+%                         % Store as added to path
+%                         ceRemoved = horzcat(ceRemoved, p{iP});
+%                     end
+%                 catch me
+%                     % Trigger warning
+%                     warning(me.identifier, '%s', me.message);
+%                 end
+%             end
+%             
+%             % And reset the 'MATLAB:rmpath:DirNotFound' warning's state
+%             this.warningstate('on');
+%             
+%         end
+
+    end
+    
+    
+    
+    %% DEPENDENCIES RELATED METHODS
+    methods
         
         function deps = merge_dependencies(this)
             %% MERGE_DEPENDENCIES merges dependencies of this project with its dependencies
@@ -207,255 +483,6 @@ classdef (InferiorClasses = {?matlab.graphics.axis.Axes}) project < handle & mat
         end
         
         
-        function go(this)
-            %% GO goes to this projects directory
-            
-            
-            try
-                cd(this.Path);
-            catch me
-                throwAsCaller(me);
-            end
-            
-        end
-        
-        
-        function activate(this)
-            %% ACTIVATE this project and all its dependencies i.e., run all `startup.m` scripts/functions of dependencies and project itself
-            
-            
-            % Get the original i.e., pre-activate working directory if it's
-            % different to the project's directory
-            if ~strcmp(pwd, this.Path)
-                this.OriginalWD = pwd;
-            end
-            
-            % First, get all dependencies in the correct order
-            deps = this.resolve_dependencies();
-            
-            % Startup deps, load pathdef, then go to project
-            try
-                % Startup each dependency
-                for iDep = 1:numel(deps)
-                    deps(iDep).startup();
-                end
-                
-                % Startup this project
-                this.startup()
-                
-                % Lastly, go to this project
-                this.go();
-                
-                % Mark as activated
-                this.IsActivated = true;
-            catch me
-                throwAsCaller(me);
-            end
-            
-        end
-        
-        
-        function deactivate(this)
-            %% DEACTIVATE this projet and its dependencies i.e., run all `finish.m` scripts/functions of dependencies and project itself
-            
-            
-            try
-                % Finis the project through its finish script
-                this.finish();
-                
-                % Had an old working directory?
-                if ~isempty(this.OriginalWD)
-                    % Change to the original i.e., pre-activation working
-                    % directory
-                    cd(this.OriginalWD)
-                    % And reset the original working directory path
-                    this.OriginalWD = '';
-                end
-                
-                % Mark as non-activated
-                this.IsActivated = false;
-            catch me
-                throwAsCaller(me);
-            end
-            
-        end
-        
-        
-        function startup(this)
-            %% STARTUP starts this project i.e., runs its `startup.m` function/script
-            
-            
-            try
-                % Has `projpath.m` function?
-                if this.HasPathdef
-                    % Add to path
-                    this.add_paths(this.pathdef());
-                end
-            
-                % Has `startup.m` script/function?
-                if this.HasStartup
-                    % Run it
-                    run(this.StartupPath)
-                end
-            catch me
-                throwAsCaller(me);
-            end
-            
-        end
-        
-        
-        function finish(this)
-            %% FINISH finishes this project i.e., runs its `finish.m` function/script
-            
-            
-            try
-                % Run finish script
-                if this.HasFinish
-                    run(this.FinishPath)
-                end
-                
-                % Then remove paths
-                if this.HasPathdef                
-                    this.rem_paths(this.pathdef());
-                end
-            catch me
-                throwAsCaller(me);
-            end
-            
-        end
-        
-        
-        function p = pathdef(this)
-            %% PATHDEF gets this projects `projpath()` result
-            
-            
-            try
-                % Get current working directory
-                chCWD = pwd;
-                
-                % Change to the directory of the project
-                cd(this.Path);
-                
-                % Make a cleanup object to return to our old working directory
-                % once this function is done
-                coCleaner = onCleanup(@() cd(chCWD));
-                
-                % Run the pathdef file
-                p = projpath();
-            catch me
-                throwAsCaller(me);
-            end
-            
-        end
-        
-        
-        function v = config(this, prop, default)
-            %% CONFIG gets a config value of the given project
-            
-            
-            % Default default value
-            if nargin < 3 || isempty(default)
-                default = [];
-            end
-            
-            % If the requested property exists
-            if isfield(this.Config, prop)
-                % We will get its value to return it to the user
-                v = this.Config.(prop);
-            % Requested property/field does not exist, so return the default
-            % value
-            else
-                v = default;
-            end
-            
-        end
-        
-        
-        function add_paths(this, varargin)
-            %% ADD_PATHS adds the given paths to the MATLAB path
-            %
-            %   ADD_PATHS({P1, P2, P3}) adds the given paths to MATLAB path
-            %
-            %   ADD_PATHS(P1, P2, ...) adds the given paths to MATLAB path
-            
-            
-            % Loop over every given path arg
-            for iArg = 1:numel(varargin)
-                % Get the path
-                p = varargin{iArg};
-            
-                % Split path chars like 'p1:p2:p3' into {p1, p2, p3}
-                if ~iscell(p)
-                    p = regexp(p, pathsep, 'split');
-                end
-
-                % Cell array of added paths
-                ceAdded = cell(1, 0);
-
-                % Loop over every given path
-                try
-                    for iP = 1:numel(p)
-                        % Add to path
-                        addpath(p{iP})
-                        % Store as added to path
-                        ceAdded = horzcat(ceAdded, p{iP});
-                    end
-                catch me
-                    % Trigger warning
-                    warning(me.identifier, me.message);
-                    % And remove all already added paths
-                    this.rem_paths(ceAdded{:});
-                end
-            end
-        end
-        
-        
-        function rem_paths(this, varargin)
-            %% REM_PATHS removes the given paths from the MATLAB path
-            %
-            %   REM_PATHS({P1, P2, P3}) removes the given paths from MATLAB path
-            %
-            %   REM_PATHS(P1, P2, ...) removes the given paths from MATLAB path
-            
-            
-            % Set the 'MATLAB:rmpath:DirNotFound' warning to off
-            this.warningstate('off');
-            
-            % Loop over every given path arg
-            for iArg = 1:numel(varargin)
-                % Get the path
-                p = varargin{iArg};
-            
-                % Split path chars like 'p1:p2:p3' into {p1, p2, p3}
-                if ~iscell(p)
-                    p = regexp(p, pathsep, 'split');
-                end
-
-                % Cell array of added paths
-                ceRemoved = cell(1, 0);
-
-                % Loop over every given path
-                try
-                    for iP = 1:numel(p)
-                        % Remove from path
-                        rmpath(p{iP});
-                        % Store as added to path
-                        ceRemoved = horzcat(ceRemoved, p{iP});
-                    end
-                catch me
-                    % Trigger warning
-                    warning(me.identifier, me.message);
-%                     % And add back all already removed paths
-%                     this.add_paths(ceRemoved{:});
-                end
-            end
-            
-            % And reset the 'MATLAB:rmpath:DirNotFound' warning's state
-            this.warningstate('on');
-            
-        end
-        
-        
         function flag = is_dependent_on(this, that, level)
             %% IS_DEPENDENT_ON checks if THIS is dependent on THAT
             
@@ -470,6 +497,9 @@ classdef (InferiorClasses = {?matlab.graphics.axis.Axes}) project < handle & mat
                 % F = THIS.IS_DEPENDENT_ON(...)
                 nargoutchk(0, 1);
                 
+                % Check correct number of `this` and `that` are given. We only
+                % support comparing one-to-many or many-to-one finding the
+                % match, or compare many-to-many on a basis of one-to-one
                 assert(numel(this) == numel(that) || numel(this) == 1 && numel(that) > 1 || numel(that) == 1 && numel(this) > 1, 'Matrix dimensions must agree');
             catch me
                 throwAsCaller(me);
@@ -540,6 +570,9 @@ classdef (InferiorClasses = {?matlab.graphics.axis.Axes}) project < handle & mat
                 % F = THIS.IS_DEPENDENCY_OF(...)
                 nargoutchk(0, 1);
                 
+                % Check correct number of `this` and `that` are given. We only
+                % support comparing one-to-many or many-to-one finding the
+                % match, or compare many-to-many on a basis of one-to-one
                 assert(numel(this) == numel(that) || numel(this) == 1 && numel(that) > 1 || numel(that) == 1 && numel(this) > 1, 'Matrix dimensions must agree');
             catch me
                 throwAsCaller(me);
@@ -624,10 +657,8 @@ classdef (InferiorClasses = {?matlab.graphics.axis.Axes}) project < handle & mat
                 , G ...
                 , 'LineWidth', 2 ...
                 , 'Layout', 'layered' ...
+                , args{:} ...
             );
-            
-            % Update drawing
-            drawnow()
             
             % Assign output quantities
             if nargout > 0
@@ -642,6 +673,121 @@ classdef (InferiorClasses = {?matlab.graphics.axis.Axes}) project < handle & mat
     
     %% OVERRIDERS
     methods
+        
+        function od = cd(this)
+            %% CD to this project's path
+            
+            
+            % Get old folder
+            this.OriginalWD = pwd;
+            
+            % Assign output?
+            if nargout > 0
+                od = this.OriginalWD;
+            end
+            
+            % To avoid weird behavior, try to change the WD
+            try
+                cd(this.Path);
+            catch me
+                throwAsCaller(me);
+            end
+            
+        end
+        
+        
+        function op = addpath(this)
+            %% ADDPATH adds this project to the MATLAB path
+            %
+            %   ADDPATH(P) adds this project as well as all its dependencies to
+            %   the MATLAB search path
+            
+            
+            % First, get all dependencies in the correct order
+            deps = this.resolve_dependencies();
+            
+            % Get the current working directory
+            chOldWD = pwd;
+            
+            % Assign output as the currently defined MATLAB search path
+            if nargout > 0
+                op = path();
+            end
+            
+            % Startup deps, startup this project, then go to project's path
+            try
+                % Add each depedency to the path
+                for iDep = 1:numel(deps)
+                    deps(iDep).addpath();
+                end
+                
+                % Get the path definiton for the project
+                p = this.pathdef();
+                
+                % Got path definition?
+                if ~isempty(p)
+                    % Then add it to MATLAB search path
+                    addpath(p{:});
+                end
+                
+                % Mark this project as activated since all path definitions have
+                % been added
+                this.IsLoaded_ = true;
+            catch me
+                % Change back to the original working directory
+                cd(chOldWD);
+                
+                % And raise the original exception
+                throwAsCaller(me);
+            end
+            
+        end
+        
+        
+        function rmpath(this, all)
+            %% RMPATH removes this project from MATLAB search path
+            %
+            %   RMPATH(P) removes the paths defined in P.PATHDEF from the MATLAB
+            %   search path
+            %
+            %   RMPATH(P, ALL) removes the paths of all dependencies, too, if
+            %   ALL is equal to any of 'on', 'yes', 1, or true.
+            
+            
+            % Default arguments
+            if nargin < 2 || isempty(all)
+                all = false;
+            end
+            
+            % Convert any 'on', or 'yes' to logical values
+            if isa(all, 'char')
+                all = any(strcmpi({'on', 'yes'}, all));
+            end
+            
+            % First, remove this project from MATLAB search path
+            p = this.pathdef();
+            if ~isempty(p)
+                rmpath(p{:})
+            end
+            
+            % And project is no longer activated because it's been removed from
+            % the MATLAB search path
+            this.IsLoaded_ = false;
+            
+            % Remove paths of dependencies, too?
+            if all
+                % First, get all dependencies in the correct order
+                deps = this.resolve_dependencies();
+                
+                % Loop over each dependency
+                for iDep = 1:numel(deps)
+                    % And remove this dependency
+                    deps(iDep).rmpath('on');
+                end
+            end
+            
+        end
+        
         
         function flag = exist(this)
             %% EXIST overrides EXIST(PROJMAN.PROJECT)
@@ -690,6 +836,10 @@ classdef (InferiorClasses = {?matlab.graphics.axis.Axes}) project < handle & mat
         
         function te = le(this, that)
             %% LE compares if THIS is less than or equal to THAT
+            %
+            %   THIS <= THAT is true if THIS is a dependent of THAT or if THAT is
+            %   a dependency of THAT - or else if THIS and THAT are the same
+            %   project i.e, their paths are the same
             
             
             te = this.is_dependent_on(that) || this == that;
@@ -699,6 +849,10 @@ classdef (InferiorClasses = {?matlab.graphics.axis.Axes}) project < handle & mat
         
         function te = ge(this, that)
             %% GE compares if THIS is greater than or equal to THAT
+            %
+            %   THIS >= THAT is true if THIS is a dependency of THAT or if THAT
+            %   is a dependent of THAT - or else if THIS and THAT are the same
+            %   project i.e, their paths are the same
             
             
             te = this.is_dependency_of(that) || this == that;
@@ -708,6 +862,9 @@ classdef (InferiorClasses = {?matlab.graphics.axis.Axes}) project < handle & mat
         
         function te = lt(this, that)
             %% LT compares if THIS is less than THAT i.e., THIS is dependent on THAT
+            %
+            %   THIS < THAT is true if THIS is a dependent of THAT or if THAT is
+            %   a dependency of THAT.
             
             
             te = this.is_dependent_on(that);
@@ -717,6 +874,9 @@ classdef (InferiorClasses = {?matlab.graphics.axis.Axes}) project < handle & mat
         
         function te = gt(this, that)
             %% GT compares if THIS is greater than THAT i.e., THIS depends on THAT
+            %
+            %   THIS >  THAT is true if THIS is a dependent of THAT or if THAT is
+            %   a dependency of THAT.
             
             
             te = this.is_dependency_of(that);
@@ -725,7 +885,7 @@ classdef (InferiorClasses = {?matlab.graphics.axis.Axes}) project < handle & mat
         
         
         function c = char(this)
-            %% CHAR convers this object to a char
+            %% CHAR converts this object to a char
             
             
             % Allow multiple arguments to be passed
@@ -843,7 +1003,7 @@ classdef (InferiorClasses = {?matlab.graphics.axis.Axes}) project < handle & mat
                 throwAsCaller(me);
             end
             
-            % And save the config
+            % And save the config to the file
             save(this.ConfigPath, '-struct', 'c'); %#ok<MCSUP>
             
         end
@@ -855,6 +1015,60 @@ classdef (InferiorClasses = {?matlab.graphics.axis.Axes}) project < handle & mat
     %% GETTERS
     methods
         
+        function flag = get.IsLoaded(this)
+            %% GET.ISLOADED flags if this project is loaded i.e., all paths added to the MATLAB search path
+            
+            
+            % Flag for the project's paths on the MATLAB search path
+            flag_ = true;
+            
+            % Get all defined paths
+            p = this.pathdef();
+            
+            % Get the current MATLAB search path
+            path_ = path;
+            
+            % If the project is loaded and project specific paths have been
+            % defined we need to
+            if ~isempty(p)
+                % Break the path down into single paths
+                p = cellfun(@(pp) strsplit(pp, pathsep), p, 'UniformOutput', false);
+                % Flatten the cell
+                horzcat(p{:});
+                % And remove empty ones (there's at least one empty one because
+                % MATLAB appends PATHSEP to a string whenever one is using
+                % GENPATH i.e., the last character of any string from GENPATH
+                % ends with PATHSEP
+                p(cellfun(@isempty, p)) = [];
+                
+                % Loop over every project path path and check if it is in the
+                % MATLAB search path or not
+                for iP = 1:numel(p)
+                    % Check if the path is in the MATLAB path
+                    if ~contains(path_, [p{iP}, pathsep])
+                        % Given path is not on here
+                        flag_ = false;
+                        % We only need to check until we find a path that's not
+                        % on PATH so we can break here
+                        break
+                    end
+                end
+            end
+            
+            % If all of the project's paths are on the MATLAB search path, then
+            % the project is per definition loaded, so we should make our own
+            % internal loaded flag aware of that
+            if flag_
+                % Update the internal loaded flag
+                this.IsLoaded_ = flag_;
+            end
+            
+            % Assign output quantity
+            flag = this.IsLoaded_ && flag_;
+            
+        end
+        
+        
         function flag = get.Exists(this)
             %% GET.EXIST flags if the path exists
             
@@ -862,6 +1076,7 @@ classdef (InferiorClasses = {?matlab.graphics.axis.Axes}) project < handle & mat
             flag = 7 == exist(this.Path, 'dir');
             
         end
+        
         
         function n = get.NDependencies(this)
             %% GET.NDEPENDENCIES returns the number of direct dependencies of this project
@@ -1023,7 +1238,8 @@ classdef (InferiorClasses = {?matlab.graphics.axis.Axes}) project < handle & mat
             for iP = 1:numel(projs)
                 % Mark all the dependencies of the current project with the
                 % others in the adjacency matrix
-                A(:,iP) = projs(iP).is_dependency_of(projs);
+                A(iP,:) = projs(iP) < projs;
+%                 A(:,iP) = projs(iP).is_dependency_of(projs);
             end
             
         end
@@ -1053,6 +1269,41 @@ classdef (InferiorClasses = {?matlab.graphics.axis.Axes}) project < handle & mat
                 case 'on'
                     % Set the new state
                     warning(prevstate, 'MATLAB:rmpath:DirNotFound');
+            end
+            
+        end
+        
+        
+        function varargout = run_in_projectdir(this, fh)
+            %% RUN_IN_PROJECT runs the given command in the project's directory
+            %
+            %   RUN_IN_PROJECT(P, FH) runs the function defined through handle
+            %   FH in the project's root directory by changing the current
+            %   working directory to P.PATH, running FH, and then changing back
+            %   to the original working directory
+            
+            
+            try
+                % Get the current working directory
+                chCWD = pwd;
+
+                % Make a cleanup object to return to our old working directory
+                % once this function is done
+                coCleaner = onCleanup(@() cd(chCWD));
+
+                % Change to the project
+                this.cd();
+
+                % And run the command
+                if nargout == 0
+                    fh();
+                elseif nargout == 1
+                    varargout{1} = fh();
+                elseif nargout == 2
+                    [varargout{1}, varargout{2}] = fh();
+                end
+            catch me
+                throwAsCaller(me);
             end
         end
         
