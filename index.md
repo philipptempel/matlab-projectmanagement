@@ -153,22 +153,24 @@ We assume that `p` and `q` are objects of type `projman.project`.
 
 | Command | Purpose |
 | ------- | ------- |
-| `activate()` | Activate a project and its dependencies |
-| `config(key)` | Returns the project's configuration value for key `key` |
-| `deactivate()` | Deactivate a project and change back to the working directory of before activating the project |
-| `digraph()` | Turns the project into a directed graph object containing the project `p` and all its dependencies |
-| `exist()` | Check if project exists i.e., if its root directory is an existing directory |
-| `exist()` | Check if project exists i.e., if its root directory is an existing directory |
-| `finish()` | Run the project's `finish.m` function (if it exists) |
-| `fullfile()` | Overwrites MATLAB's `fullfile` method to return paths relative to `p.Path` |
-| `go()` | Change current working directory to the project's root |
-| `is_dependency_of(q)` | Check if project `p` is a dependency of `q` |
-| `is_dependent_on(q)` | Check if project `p` is dependent on `q` i.e., `q` is a dependency of `p` |
+| `addpath(p)` | Add paths of the project and its dependencies to MATLAB search path |
+| `open(p)` | Activate a project, its dependencies |
+| `cd(p)` | Change current working directory to the project's root |
+| `config(p, key)` | Returns the project's configuration value for key `key` |
+| `deactivate(p)` | Deactivate a project and change back to the working directory of before activating the project |
+| `digraph(p)` | Turns the project into a directed graph object containing the project `p` and all its dependencies |
+| `exist(p)` | Check if project exists i.e., if its root directory is an existing directory |
+| `finish(p)` | Run the project's `finish.m` function/script (if it exists) |
+| `fullfile(p)` | Overwrites MATLAB's `fullfile` method to return paths relative to `p.Path` |
+| `is_dependency_of(p, q)` | Check if project `p` is a dependency of `q` |
+| `is_dependent_on(p, q)` | Check if project `p` is dependent on `q` i.e., `q` is a dependency of `p` |
 | `path(p)` | Return the project's path |
-| `pathdef()` | Evaluate the project's `pathdef()` function and return the cell array of paths that need to added to MATLAB search path |
-| `plot()` | Plot the project and its dependencies in a directed graph object |
-| `startup()` | Evaluate the project's `startup.m` function |
-| `table()` | Convert the project(s) into a MATLAB table with columns 'Name', 'Path', 'Dependencies' |
+| `pathdef(p)` | Evaluate the project's `pathdef()` function and return the cell array of paths that need to added to MATLAB search path |
+| `plot(p)` | Plot the project and its dependencies in a directed graph object |
+| `reset(p)` | Short hand command for calling `p.finish()` and `p.startup()` |
+| `rmpath(p)` | Remove paths of the project from MATLAB search path |
+| `startup(p)` | Evaluate the project's `startup.m` function/script (if it exists) |
+| `table(p)` | Convert the project(s) into a MATLAB table with columns 'Name', 'Path', 'Dependencies' |
 
 
 
