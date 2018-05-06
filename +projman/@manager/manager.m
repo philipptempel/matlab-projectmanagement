@@ -21,8 +21,8 @@ classdef manager < handle
     %% DEPENDENT PUBLIC PROPERTIES
     properties ( Dependent )
         
-        % Array of activated projects
-        Activated
+        % Array of loaded projects
+        Loaded
         
     end
     
@@ -158,14 +158,22 @@ classdef manager < handle
             
             
             try
-                % Find matching names
-                idxMatches = ismember({this.Projects.Name}, name);
-                
-                % Make sure we found any project
-                assert(any(idxMatches), 'PHILIPPTEMPEL:PROJMAN:PROJMAN:MANAGER:FIND:ProjectNotFound', 'Project could not be found because it does not exist or names are too ambigious');
-                
-                % And return the data
-                p = this.Projects(idxMatches);
+                % If a project is passed, check if it is a registered project
+                if isa(name, 'projman.project')
+                    assert(any(this.Projects == name), 'PHILIPPTEMPEL:PROJMAN:PROJMAN:MANAGER:FIND:ProjectNotFound', 'Project object given is not a registered project.');
+                    
+                    p = name;
+                % Name of project passed as char
+                else
+                    % Find matching names
+                    idxMatches = ismember({this.Projects.Name}, name);
+
+                    % Make sure we found one project
+                    assert(any(idxMatches), 'PHILIPPTEMPEL:PROJMAN:PROJMAN:MANAGER:FIND:ProjectNotFound', 'Project could not be found because it does not exist or names are too ambigious.');
+
+                    % And return the first project that matches
+                    p = this.Projects(find(idxMatches, 1, 'first'));
+                end
             catch me
                 % No match, so let's suggest projects based on their string
                 % distance
@@ -206,8 +214,8 @@ classdef manager < handle
         end
         
         
-        function go(this, name)
-            %% GO to a project's folder
+        function cd(this, name)
+            %% CD to the project's folder
             
             
             try
@@ -215,7 +223,7 @@ classdef manager < handle
                 p = this.find(name);
                 
                 % Go to project
-                p.go();
+                p.cd();
             catch me
                 throwAsCaller(me);
             end
@@ -223,18 +231,18 @@ classdef manager < handle
         end
         
         
-        function activate(this, name)
-            %% ACTIVATE a project
+        function open(this, name)
+            %% OPEN the project
             
             
             try
                 % Find project
                 p = this.find(name);
                 
-                % Only continue if project isn't activated
-                if ~p.IsActivated
-                    % Activate project
-                    p.activate();
+                % Only continue if project isn't loaded
+                if ~p.IsLoaded
+                    % Open project
+                    p.open();
                 end
             catch me
                 throwAsCaller(me);
@@ -243,22 +251,108 @@ classdef manager < handle
         end
         
         
-        function deactivate(this, name)
-            %% DEACTIVATE a project
+        function close(this, name)
+            %% CLOSE the project
             
             
             try
                 % Find project
                 p = this.find(name);
                 
-                % Check if it is activated
-                if p.IsActivated
-                    % Deactivate project
-                    p.deactivate();
+                % Check if it is loaded
+                if p.IsLoaded
+                    % Close project
+                    p.close();
                 end
             catch me
                 throwAsCaller(me);
             end
+            
+        end
+        
+        
+        function startup(this, name)
+            %% STARTUP executes the project's startup script/function
+            %
+            %   STARTUP(P) runs the project's startup script/function.
+            
+            
+            try
+                % Find project
+                p = this.find(name);
+                
+                % Startup project
+                p.startup();
+            catch me
+                throwAsCaller(me);
+            end
+            
+        end
+        
+        
+        function finish(this, name)
+            %% FINISH executes the project's `finish` script/function
+            %
+            %   FINISH(P) runs the project's `finish` script/function 
+            
+            
+            try
+                % Find project
+                p = this.find(name);
+                
+                % Finish project
+                p.finish();
+            catch me
+                throwAsCaller(me);
+            end
+            
+        end
+        
+        
+        function reset(this, name)
+            %% RESET resets the project i.e., runs its finish and startup script
+            
+            
+            try
+                % Find project
+                p = this.find(name);
+                
+                % Reset project
+                p.reset();
+            catch me
+                throwAsCaller(me);
+            end
+            
+        end
+        
+        
+        function pd = pathdef(this, name)
+            %% PATHDEF gets this projects `projpath()` result
+            
+            
+            try
+                % Find project
+                p = this.find(name);
+                
+                % Get project's pathdef
+                pd = p.pathdef();
+            catch me
+                throwAsCaller(me);
+            end
+            
+        end
+        
+        
+        function pd = projpath(this, name)
+            %% PROJPATH is a wrapper for PATHDEF
+            %
+            %   See also:
+            %
+            %   PROJMAN.MANAGER.PATHDEF
+            
+            
+            pd = this.pathdef(name);
+            
         end
         
     end
@@ -268,20 +362,12 @@ classdef manager < handle
     %% GETTERS
     methods
         
-        function p = get.Activated(this)
-            %% GET.ACTIVATED returns all activated projects
+        function p = get.Loaded(this)
+            %% GET.LOADED returns all loaded projects
             
             
-            % Find activated projects
-            idx = [this.Projects.IsActivated];
-            
-            % If we found activated projects
-            if ~isempty(idx)
-                p = this.Projects(idx);
-            % No activated projects found
-            else
-                p = projman.project.empty(1, 0);
-            end
+            % Get all loaded projets
+            p = this.Projects([this.Projects.IsLoaded]);
             
         end
         
@@ -316,9 +402,6 @@ classdef manager < handle
                 % There are other objects that point to the same path so we will
                 % merge them
                 else
-                    % Convert the logical values to linear indexes
-                    idxMatches = find(loMatches);
-                    
                     % Get the config
                     stConfig = proj.Config;
                     
