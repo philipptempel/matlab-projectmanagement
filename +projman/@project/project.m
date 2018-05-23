@@ -293,8 +293,11 @@ classdef (InferiorClasses = {?matlab.graphics.axis.Axes}) project < handle & mat
                 % Save list of open documents
                 this.save_documents();
                 
-                % And change back to the previous working directory
-                cd(this.OriginalWD);
+                % And change back to the previous working directory if there is
+                % one
+                if ~isempty(this.OriginalWD)
+                    cd(this.OriginalWD);
+                end
             catch me
                 throwAsCaller(me);
             end
@@ -1302,7 +1305,7 @@ classdef (InferiorClasses = {?matlab.graphics.axis.Axes}) project < handle & mat
             if ~isempty(ef)
                 % Cleanup the ef array (it contains some fields that cannot be
                 % serialized)
-                ef = table(vertcat(ef.Filename), vertcat(ef.Selection), 'VariableNames', {'Filename', 'Selection'});
+                ef = table(transpose({ef.Filename}), vertcat(ef.Selection), 'VariableNames', {'Filename', 'Selection'});
                 
                 % Save to MAT file
                 save(this.DocumentsPath, 'ef');
