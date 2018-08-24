@@ -309,25 +309,16 @@ classdef manager < handle
         end
         
         
-        function reset(this, name)
-            %% RESET resets the project i.e., runs its finish and startup script
+        function varargout = reset(this)
+            %% RESET the project manager object
             
             
-            % RESET(THIS)
-            if nargin < 2
-                % Create a new instance of this object
-                this = projman.manager();
-            % RESET(THIS, NAME)
-            else
-                try
-                    % Find project
-                    p = this.find(name);
-
-                    % Reset project
-                    p.reset();
-                catch me
-                    throwAsCaller(me);
-                end
+            % Create a new instance of this object
+            this = projman.manager();
+            
+            % Assign output?
+            if nargout
+                varargout{1} = this;
             end
             
         end

@@ -269,6 +269,7 @@ classdef (InferiorClasses = {?matlab.graphics.axis.Axes}) project < handle & mat
             catch me
                 throwAsCaller(me);
             end
+            
         end
         
         
