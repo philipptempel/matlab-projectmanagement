@@ -313,14 +313,21 @@ classdef manager < handle
             %% RESET resets the project i.e., runs its finish and startup script
             
             
-            try
-                % Find project
-                p = this.find(name);
-                
-                % Reset project
-                p.reset();
-            catch me
-                throwAsCaller(me);
+            % RESET(THIS)
+            if nargin < 2
+                % Create a new instance of this object
+                this = projman.manager();
+            % RESET(THIS, NAME)
+            else
+                try
+                    % Find project
+                    p = this.find(name);
+
+                    % Reset project
+                    p.reset();
+                catch me
+                    throwAsCaller(me);
+                end
             end
             
         end
