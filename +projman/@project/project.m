@@ -987,7 +987,7 @@ classdef (InferiorClasses = {?matlab.graphics.axis.Axes}) project < handle & mat
                 % Break the path down into single paths
                 p = cellfun(@(pp) strsplit(pp, pathsep), p, 'UniformOutput', false);
                 % Flatten the cell
-                horzcat(p{:});
+                p = horzcat(p{:});
                 % And remove empty ones (there's at least one empty one because
                 % MATLAB appends PATHSEP to a string whenever one is using
                 % GENPATH i.e., the last character of any string from GENPATH
