@@ -16,24 +16,39 @@ classdef helper
             %% FILENAME returns the computer aware filename of the projects file
             
             
-            % @see https://undocumentedmatlab.com/blog/unique-computer-id
-%             sid = '';
-%             ni = java.net.NetworkInterface.getNetworkInterfaces;
-%             while ni.hasMoreElements
-%                 addr = ni.nextElement.getHardwareAddress;
-%                 if ~isempty(addr)
-%                     sid = [sid, '.', sprintf('%.2X', typecast(addr, 'uint8'))];
-%                 end
-%             end
-            sid = sprintf('%.2X', typecast(java.net.NetworkInterface.getByInetAddress(java.net.InetAddress.getLocalHost()).getHardwareAddress, 'uint8'));
-            
-            % Check userpath is not empty
-            if isempty(userpath)
-                userpath('reset');
+            % Reset user path
+            if isempty(userpath())
+              userpath('reset');
             end
-
-            % Build the filename
-            f = fullfile(userpath, sprintf('projects_%s.mat', matlab.lang.makeValidName(sid)));
+            
+            % File path
+            chFile = fullfile(userpath(), '.projman');
+            
+            % Check if file does not exist
+            if 2 ~= exist(chFile, 'file')
+              % Create a unique computer ID
+              chCompId = char(java.util.UUID.randomUUID);
+              
+              % Write computer ID to file
+              try
+                % File identifier
+                hFid = fopen(chFile, 'w');
+                
+                % File closer as clean up
+                coCloser = onCleanup(@() fclose(hFid));
+                
+                % Write to file
+                fprintf(hFid, '%s', chCompId);
+              catch me
+                rethrow(me);
+              end
+            end
+            
+            % Read the file
+            chCompId = strip(fileread(chFile));
+            
+            % Build filename
+            f = fullfile(userpath(), sprintf('projects_%s.mat', matlab.lang.makeValidName(chCompId)));
             
         end
         
