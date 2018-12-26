@@ -34,6 +34,13 @@ classdef manager < handle
         
         function addthis(varargin)
             %% ADDTHIS adds the current working directory as new project
+            %
+            %   ADDTHIS(Name, Value) adds the current working directory as new
+            %   project to the project manager instance. All arguments to
+            %   ADDTHIS are passed down to PROJMAN.PROJECT.
+            %
+            %   See also
+            %   PROJMAN.PROJECT
             
             
             % Build the arguments to `projman.project`
